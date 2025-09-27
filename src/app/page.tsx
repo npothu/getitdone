@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getCurrentCycleInfo } from '../lib/utils'
+import { getCurrentCycleInfo, getTaskOptimalPhase, getOptimalPhaseInfo, isOptimalTiming } from '../lib/utils'
 
 export default function Dashboard() {
   // Real cycle data - in production this would come from user input
@@ -84,20 +84,40 @@ export default function Dashboard() {
               
               {/* Task List */}
               <div className="space-y-3 mb-4">
-                {tasks.map(task => (
-                  <div key={task.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleTask(task.id)}
-                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className={`flex-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                      {task.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
+  {tasks.map(task => {
+    const optimalPhase = getTaskOptimalPhase(task.text);
+    const phaseInfo = getOptimalPhaseInfo(optimalPhase);
+    const isOptimal = isOptimalTiming(task.text, currentCycle.phase);
+    
+    return (
+      <div key={task.id} className={`p-3 rounded-lg border-2 ${isOptimal ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            checked={task.completed}
+            onChange={() => toggleTask(task.id)}
+            className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          />
+          <span className={`flex-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+            {task.text}
+          </span>
+          <div className="flex items-center space-x-2">
+            {isOptimal ? (
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                ✨ Optimal Now
+              </span>
+            ) : (
+              <span className="px-2 py-1 text-xs rounded-full font-medium" 
+                    style={{ backgroundColor: phaseInfo.color + '20', color: phaseInfo.color }}>
+                {phaseInfo.emoji} Best in {phaseInfo.name}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
 
               {/* Add Task */}
               <div className="flex space-x-2">

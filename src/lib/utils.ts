@@ -69,3 +69,47 @@ export interface CycleData {
     const cycleDay = calculateCycleDay(lastPeriodDate, cycleLength);
     return getCyclePhase(cycleDay, cycleLength);
   }
+
+  // Add this to the end of your utils.ts file
+
+export function getTaskOptimalPhase(taskText: string): string {
+    const text = taskText.toLowerCase();
+    
+    // Creative and brainstorming tasks
+    if (text.includes('brainstorm') || text.includes('creative') || text.includes('idea') || text.includes('design')) {
+      return 'follicular';
+    }
+    
+    // Presentation and social tasks
+    if (text.includes('presentation') || text.includes('meeting') || text.includes('demo') || text.includes('pitch')) {
+      return 'ovulatory';
+    }
+    
+    // Detail and completion tasks
+    if (text.includes('review') || text.includes('edit') || text.includes('organize') || text.includes('complete') || text.includes('finish')) {
+      return 'luteal';
+    }
+    
+    // Planning and reflection tasks
+    if (text.includes('plan') || text.includes('strategy') || text.includes('research')) {
+      return 'menstrual';
+    }
+    
+    // Default to current phase if unclear
+    return 'any';
+  }
+  
+  export function getOptimalPhaseInfo(phase: string) {
+    const phases: Record<string, { name: string; color: string; emoji: string }> = {
+      'menstrual': { name: 'Menstruation', color: '#ef4444', emoji: '🌙' },
+      'follicular': { name: 'Follicular', color: '#10b981', emoji: '🌱' },
+      'ovulatory': { name: 'Ovulation', color: '#f59e0b', emoji: '⚡' },
+      'luteal': { name: 'Luteal', color: '#8b5cf6', emoji: '🎯' }
+    };
+    return phases[phase] || { name: 'Any time', color: '#6b7280', emoji: '📋' };
+  }
+  
+  export function isOptimalTiming(taskText: string, currentPhase: string): boolean {
+    const optimalPhase = getTaskOptimalPhase(taskText);
+    return optimalPhase === 'any' || optimalPhase === currentPhase;
+  }
