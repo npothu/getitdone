@@ -12,12 +12,27 @@ import {
    Types
    ========================= */
 type Task = { id: number; text: string; completed: boolean };
+type ColKey = "Menstrual" | "Follicular" | "Ovulatory" | "Early Luteal" | "Late Luteal";
+
+/* Phase UI palette for Kanban */
+const PHASE_UI: Record<ColKey, { base: string; light: string; chipBg: string; chipText: string; border: string }> = {
+  // deep color
+  Menstrual:   { base: "#be123c", light: "rgba(190,18,60,0.08)", chipBg: "bg-rose-50",    chipText: "text-rose-800",    border: "#fecdd3" },
+  // “free & fun”
+  Follicular:  { base: "#0ea5a4", light: "rgba(14,165,164,0.08)", chipBg: "bg-teal-50",    chipText: "text-teal-800",    border: "#99f6e4" },
+  // “punch in the face”
+  Ovulatory:   { base: "#f97316", light: "rgba(249,115,22,0.10)", chipBg: "bg-orange-50",  chipText: "text-orange-800",  border: "#fed7aa" },
+  // soft
+  "Early Luteal": { base: "#a78bfa", light: "rgba(167,139,250,0.10)", chipBg: "bg-violet-50", chipText: "text-violet-800", border: "#ddd6fe" },
+  // deeper again
+  "Late Luteal":  { base: "#6b21a8", light: "rgba(107,33,168,0.08)", chipBg: "bg-purple-50", chipText: "text-purple-800", border: "#e9d5ff" },
+};
 
 /* =========================
    Page
    ========================= */
 export default function Dashboard() {
-  // --- Cycle state (same defaults) ---
+  // --- Cycle state ---
   const [lastStart, setLastStart] = useState<string>(
     new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
   );
@@ -28,25 +43,19 @@ export default function Dashboard() {
     () => getCurrentCycleInfo(lastPeriodDate, cycleLen),
     [lastPeriodDate, cycleLen]
   );
-
-  // Keep x-axis long enough if cycle is running “late”
   const effectiveLen = Math.max(cycleLen, currentCycle.cycleDay);
 
-  // --- Tasks (shared store) ---
+  // --- Tasks ---
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: "Task A (label)", completed: false },
     { id: 2, text: "Task B (label)", completed: false },
     { id: 3, text: "Complete 3rd quarterly report", completed: false },
     { id: 4, text: "Prepare presentation slides", completed: false },
   ]);
-
-  const toggleTask = (id: number) => {
+  const toggleTask = (id: number) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
-  };
 
-  /* ============ Kanban grouping (RIGHT column) ============ */
-  type ColKey = "Menstrual" | "Follicular" | "Ovulatory" | "Early Luteal" | "Late Luteal";
-
+  /* ---- Kanban grouping ---- */
   const columns: { key: ColKey; desc: string }[] = [
     { key: "Menstrual", desc: "Gentle planning, reflection" },
     { key: "Follicular", desc: "Ideas, learning, building momentum" },
@@ -64,7 +73,6 @@ export default function Dashboard() {
     if (["luteal", "post-ovulatory", "postovulatory"].includes(s)) return "Luteal";
     return "Menstrual";
   }
-
   function bucketForTask(text: string): ColKey {
     const phase = normalizePhase(getTaskOptimalPhase(text));
     if (phase === "Luteal") {
@@ -78,21 +86,15 @@ export default function Dashboard() {
   }
 
   const initCols: Record<ColKey, Task[]> = {
-    Menstrual: [],
-    Follicular: [],
-    Ovulatory: [],
-    "Early Luteal": [],
-    "Late Luteal": [],
+    Menstrual: [], Follicular: [], Ovulatory: [], "Early Luteal": [], "Late Luteal": [],
   };
-
   const tasksByCol = tasks.reduce<Record<ColKey, Task[]>>((acc, t) => {
     const key = bucketForTask(t.text);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(t);
+    (acc[key] ??= []).push(t);
     return acc;
   }, { ...initCols });
 
-  // Add Task lives in the Kanban (RIGHT column)
+  // Add Task (Kanban header)
   const [newKanbanTask, setNewKanbanTask] = useState("");
   const addTaskFromKanban = () => {
     const text = newKanbanTask.trim();
@@ -107,7 +109,7 @@ export default function Dashboard() {
     }
   };
 
-  // Long-term tasks (RIGHT column, under Kanban)
+  // Long-term tasks (only place you can add)
   const [longTerm, setLongTerm] = useState<string[]>([
     "Publish capstone paper",
     "Plan Q4 product launch",
@@ -123,26 +125,26 @@ export default function Dashboard() {
 
   /* ============ Layout ============ 
      XL and up:
-       LEFT  (span 1): Hormone Graph → Today’s Tasks
-       RIGHT (span 2): Kanban (with Add Task) → Long-term tasks
+       LEFT  (span 1): Hormone Graph
+       RIGHT (span 2): Today’s Tasks (wide) → Kanban (wide) → Long-term tasks (wide)
   */
   return (
     <div className="min-h-screen bg-[#FFF7F9]">
       <div className="w-full px-6 py-6 force-text-black">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* LEFT (1/3 width) */}
+          {/* LEFT (1/3) — Hormone chart */}
           <div className="xl:col-span-1 space-y-8">
-            {/* Hormone Graph + Log Period + Info */}
             <section className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
-                  <Legend swatch="#F43F5E" label="Estrogen (E2)" />
-                  <Legend swatch="#FB7185" label="Progesterone (P4)" />
+                  <Legend swatch="#e11d48" label="Estrogen (E2)" />
+                  <Legend swatch="#6366F1" label="Progesterone (P4)" />
                   <Legend swatch="#22D3EE" label="Today" line />
                 </div>
               </div>
 
+              {/* Distinct colors: E2 = rose-600, P4 = indigo-500 */}
               <HormoneGraph
                 cycleLength={effectiveLen}
                 cycleDay={currentCycle.cycleDay}
@@ -164,8 +166,11 @@ export default function Dashboard() {
                 </p>
               </div>
             </section>
+          </div>
 
-            {/* Today’s Tasks (no add here) */}
+          {/* RIGHT (2/3) — Wide stack: Tasks → Kanban → Long-term */}
+          <aside className="xl:col-span-2 space-y-8">
+            {/* Today’s Tasks — WIDE */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
               <h2 className="text-2xl font-bold mb-4">Today’s Tasks</h2>
               <div className="space-y-3">
@@ -211,11 +216,8 @@ export default function Dashboard() {
                 })}
               </div>
             </section>
-          </div>
 
-          {/* RIGHT (2/3 width) */}
-          <aside className="xl:col-span-2 space-y-8">
-            {/* Kanban with Add Task */}
+            {/* Kanban — WIDE */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
               <div className="flex items-end justify-between gap-3 mb-4">
                 <div>
@@ -241,29 +243,55 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Color-coded columns */}
               <div className="grid grid-flow-col auto-cols-[minmax(220px,1fr)] gap-4 overflow-x-auto pb-2">
-                {columns.map((col) => (
-                  <div key={col.key} className="rounded-lg border border-[#F1F5F9] bg-[#FFF7F9]">
-                    <div className="px-3 py-2 border-b border-[#F1F5F9]">
-                      <div className="font-semibold">{col.key}</div>
-                      <div className="text-xs text-black/70">{col.desc}</div>
-                    </div>
-                    <div className="p-3 space-y-2">
-                      {tasksByCol[col.key].length === 0 && (
-                        <div className="text-xs text-black/50 italic">No tasks here yet</div>
-                      )}
-                      {tasksByCol[col.key].map((t) => (
-                        <div key={t.id} className="p-2 rounded-md bg-white border border-[#F1F5F9] text-sm">
-                          {t.text}
+                {columns.map((col) => {
+                  const ui = PHASE_UI[col.key];
+                  return (
+                    <div
+                      key={col.key}
+                      className="rounded-lg border"
+                      style={{
+                        backgroundColor: ui.light,
+                        borderColor: ui.border,
+                      }}
+                    >
+                      <div
+                        className="px-3 py-2 border-b"
+                        style={{ borderColor: ui.border }}
+                      >
+                        <div className="font-semibold" style={{ color: ui.base }}>
+                          {col.key}
                         </div>
-                      ))}
+                        <div className="text-xs text-black/70">{col.desc}</div>
+                      </div>
+
+                      <div className="p-3 space-y-2">
+                        {tasksByCol[col.key].length === 0 && (
+                          <div className="text-xs text-black/50 italic">No tasks here yet</div>
+                        )}
+                        {tasksByCol[col.key].map((t) => (
+                          <div
+                            key={t.id}
+                            className={`p-2 rounded-md bg-white text-sm ${ui.chipBg} ${ui.chipText}`}
+                            style={{
+                              borderLeft: `4px solid ${ui.base}`,
+                              borderRight: `1px solid ${ui.border}`,
+                              borderTop: `1px solid ${ui.border}`,
+                              borderBottom: `1px solid ${ui.border}`,
+                            }}
+                          >
+                            {t.text}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
-            {/* Long-term tasks */}
+            {/* Long-term tasks — WIDE (only place to add) */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
               <h2 className="text-2xl font-bold mb-4">Your Long-term Tasks</h2>
               <ul className="list-disc pl-5 space-y-2">
@@ -388,9 +416,8 @@ function HormoneGraph({
   const x = (day: number) =>
     PAD + ((Math.max(1, Math.min(cycleLength, day)) - 1) / Math.max(1, cycleLength - 1)) * (W - PAD * 2);
   const y = (val: number) => {
-    const top = 16,
-      bottom = H - 32;
-    return bottom - clamp01(val) * (bottom - top);
+    const top = 16, bottom = H - 32;
+    return bottom - Math.max(0, Math.min(1, val)) * (bottom - top);
   };
 
   // Phase boundaries
@@ -405,7 +432,7 @@ function HormoneGraph({
 
   // Curves (educational 0..1)
   const estrogen = (d: number) => {
-    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1)) / 1.8);
+    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1) / 1.8));
     const peak = Math.exp(-Math.pow((d - ovu) / 2.2, 2));
     const luteal = 0.3 * Math.exp(-Math.pow((d - (ovu + 6)) / 4.0, 2));
     return clamp01(0.15 + 0.6 * a + 0.9 * peak + luteal);
@@ -420,8 +447,9 @@ function HormoneGraph({
   const e2Path = pathFrom(days, (d) => ({ x: x(d), y: y(estrogen(d)) }));
   const p4Path = pathFrom(days, (d) => ({ x: x(d), y: y(progesterone(d)) }));
 
-  const e2Area = areaFrom(days, (d) => ({ x: x(d), y: y(estrogen(d)) }), H - 28);
-  const p4Area = areaFrom(days, (d) => ({ x: x(d), y: y(progesterone(d)) }), H - 28);
+  // Distinct fills
+  const e2Area = areaFrom(days, (d) => ({ x: x(d), y: y(estrogen(d)) }), H - 28);  // rose
+  const p4Area = areaFrom(days, (d) => ({ x: x(d), y: y(progesterone(d)) }), H - 28); // indigo
 
   const [tip, setTip] = useState<{ show: boolean; left: number; top: number; day: number } | null>(null);
 
@@ -439,9 +467,9 @@ function HormoneGraph({
 
   const bandRects = [
     { start: 1, end: menstrualEnd, fill: "rgba(244,63,94,0.06)", label: "Menstrual" },
-    { start: follicularStart, end: follicularEnd, fill: "rgba(251,146,60,0.06)", label: "Follicular" },
-    { start: ovulatoryStart, end: ovulatoryEnd, fill: "rgba(250,204,21,0.10)", label: "Ovulatory" },
-    { start: lutealStart, end: lutealEnd, fill: "rgba(251,113,133,0.06)", label: "Luteal" },
+    { start: follicularStart, end: follicularEnd, fill: "rgba(20,184,166,0.06)", label: "Follicular" },
+    { start: ovulatoryStart, end: ovulatoryEnd, fill: "rgba(249,115,22,0.10)", label: "Ovulatory" },
+    { start: lutealStart, end: lutealEnd, fill: "rgba(167,139,250,0.06)", label: "Luteal" },
   ].filter((b) => b.end >= b.start);
 
   function onMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
@@ -453,12 +481,8 @@ function HormoneGraph({
     const day = Math.max(1, Math.min(cycleLength, Math.round(1 + ratio * (cycleLength - 1))));
     setTip({ show: true, left: e.clientX - left + 12, top: e.clientY - top + 12, day });
   }
-  function onLeave() {
-    setTip(null);
-  }
-  function onClick() {
-    if (!tip) setTip({ show: true, left: 240, top: 40, day: cycleDay });
-  }
+  function onLeave() { setTip(null); }
+  function onClick() { if (!tip) setTip({ show: true, left: 240, top: 40, day: cycleDay }); }
 
   return (
     <div className="relative">
@@ -492,30 +516,23 @@ function HormoneGraph({
           );
         })}
 
-        {/* filled areas */}
-        <path d={e2Area} fill="rgba(244, 63, 94, 0.15)" />
-        <path d={p4Area} fill="rgba(251, 113, 133, 0.15)" />
+        {/* filled areas (distinct) */}
+        <path d={e2Area} fill="rgba(225, 29, 72, 0.15)" />
+        <path d={p4Area} fill="rgba(99, 102, 241, 0.15)" />
 
-        {/* lines */}
-        <path d={e2Path} fill="none" stroke="#F43F5E" strokeWidth="2.5" />
-        <path d={p4Path} fill="none" stroke="#FB7185" strokeWidth="2.5" />
+        {/* lines (distinct) */}
+        <path d={e2Path} fill="none" stroke="#e11d48" strokeWidth="2.5" />
+        <path d={p4Path} fill="none" stroke="#6366F1" strokeWidth="2.5" />
 
         {/* today marker */}
         <line
-          x1={x(cycleDay)}
-          y1={16}
-          x2={x(cycleDay)}
-          y2={H - 28}
-          stroke="#22D3EE"
-          strokeDasharray="6,6"
-          strokeWidth={2}
+          x1={x(cycleDay)} y1={16} x2={x(cycleDay)} y2={H - 28}
+          stroke="#22D3EE" strokeDasharray="6,6" strokeWidth={2}
         />
         <circle cx={x(cycleDay)} cy={y(estrogen(cycleDay))} r="5.5" fill="#22D3EE" />
 
         {/* x labels */}
-        <text x={x(1)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
-          1
-        </text>
+        <text x={x(1)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">1</text>
         <text x={x(Math.ceil(cycleLength / 2))} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
           {Math.ceil(cycleLength / 2)}
         </text>
@@ -530,12 +547,12 @@ function HormoneGraph({
           <div className="bg-white border border-[#F1F5F9] shadow-sm rounded-md px-3 py-2 text-xs text-[#111827]">
             <div className="font-medium mb-1">Day {tip.day}</div>
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#F43F5E" }} />
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#e11d48" }} />
               <span className="text-[#6B7280]">E2:</span>{" "}
               <span className="font-medium">{qualitative((d) => estrogen(d), tip.day)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#FB7185" }} />
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#6366F1" }} />
               <span className="text-[#6B7280]">P4:</span>{" "}
               <span className="font-medium">{qualitative((d) => progesterone(d), tip.day)}</span>
             </div>
@@ -549,35 +566,21 @@ function HormoneGraph({
 /* =========================
    Helpers
    ========================= */
-function clamp01(v: number) {
-  return Math.max(0, Math.min(1, v));
-}
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v));
-}
-function sigmoid(z: number) {
-  return 1 / (1 + Math.exp(-z));
-}
+function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
+function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+function sigmoid(z: number) { return 1 / (1 + Math.exp(-z)); }
 function pathFrom<T>(arr: T[], map: (t: T, i: number) => { x: number; y: number }) {
-  return arr
-    .map((t, i) => {
-      const { x, y } = map(t, i);
-      return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
+  return arr.map((t, i) => {
+    const { x, y } = map(t, i);
+    return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+  }).join(" ");
 }
-function areaFrom<T>(
-  arr: T[],
-  map: (t: T, i: number) => { x: number; y: number },
-  baselineY: number
-) {
+function areaFrom<T>(arr: T[], map: (t: T, i: number) => { x: number; y: number }, baselineY: number) {
   const pts = arr.map(map);
-  if (pts.length === 0) return "";
+  if (!pts.length) return "";
   const start = `M ${pts[0].x.toFixed(2)} ${baselineY.toFixed(2)}`;
   const lines = pts.map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
   const end = `L ${pts[pts.length - 1].x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
   return `${start} ${lines} ${end}`;
 }
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
