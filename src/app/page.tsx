@@ -1,8 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { getCurrentCycleInfo } from '../lib/utils'
 
 export default function Dashboard() {
+  // Real cycle data - in production this would come from user input
+  const lastPeriodDate = new Date(Date.now() - 12 * 24 * 60 * 60 * 1000) // 12 days ago
+  const currentCycle = getCurrentCycleInfo(lastPeriodDate, 28)
+  
   const [tasks, setTasks] = useState([
     { id: 1, text: 'Task A (label)', completed: false },
     { id: 2, text: 'Task B (label)', completed: false },
@@ -45,8 +50,8 @@ export default function Dashboard() {
                   {/* Cycle Circle */}
                   <div className="w-full h-full border-4 border-gray-200 rounded-full relative">
                     {/* Current phase indicator - blue dot */}
-                    <div className="absolute w-4 h-4 bg-blue-500 rounded-full" 
-                         style={{ top: '20%', left: '60%' }}>
+                    <div className="absolute w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: currentCycle.phaseColor, top: '20%', left: '60%' }}>
                     </div>
                     {/* Dashed line to center */}
                     <div className="absolute top-1/2 left-1/2 w-16 h-0 border-t-2 border-dashed border-blue-500 transform -translate-x-full -translate-y-1/2 rotate-[-30deg]">
@@ -55,8 +60,8 @@ export default function Dashboard() {
                   {/* Center text */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">Day 12</div>
-                      <div className="text-sm text-gray-600">Follicular</div>
+                    <div className="text-2xl font-bold text-gray-900">Day {currentCycle.cycleDay}</div>
+                    <div className="text-sm text-gray-600">{currentCycle.phaseName}</div>
                     </div>
                   </div>
                 </div>
@@ -64,11 +69,11 @@ export default function Dashboard() {
               
               {/* Phase info */}
               <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900 mb-2">Follicular Phase</div>
-                <div className="text-sm text-gray-600 mb-4">Perfect time for brainstorming and starting new projects</div>
+              <div className="text-lg font-semibold text-gray-900 mb-2">{currentCycle.phaseName}</div>
+              <div className="text-sm text-gray-600 mb-4">{currentCycle.description}</div>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                   <div className="text-sm font-medium text-orange-800">Optimal for today:</div>
-                  <div className="text-sm text-orange-700">Creative work, learning, planning</div>
+                  <div className="text-sm text-orange-700">{currentCycle.optimalTasks.join(', ')}</div>
                 </div>
               </div>
             </div>
@@ -120,10 +125,10 @@ export default function Dashboard() {
             <div className="bg-white rounded-lg p-6 shadow-sm border">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Today's Focus</h2>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="text-blue-800 font-medium">Quote: Idle</div>
-                <div className="text-blue-700 text-sm mt-1">
-                  Your energy is building - perfect for starting something new!
-                </div>
+              <div className="font-medium" style={{ color: currentCycle.phaseColor }}>Day {currentCycle.cycleDay} - {currentCycle.phaseName}</div>
+<div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
+  {currentCycle.description}
+</div>
               </div>
               
               <div className="space-y-2">
