@@ -8,24 +8,20 @@ import {
   isOptimalTiming,
 } from "../lib/utils";
 
-// ---------------- Types ----------------
-type LogEntry = {
-  id: number;
-  day: number;
-  phase: string;
-  energy: number;
-  mood: string;
-  note: string;
-  when: string;
-};
+/* =========================
+   Types
+   ========================= */
+type Task = { id: number; text: string; completed: boolean };
 
-// ---------------- Page ----------------
+/* =========================
+   Page
+   ========================= */
 export default function Dashboard() {
-  // Minimal cycle state (defaults)
+  // --- Cycle state (same defaults) ---
   const [lastStart, setLastStart] = useState<string>(
     new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
   );
-  const [cycleLen, setCycleLen] = useState<number>(28);
+  const [cycleLen] = useState<number>(28);
 
   const lastPeriodDate = useMemo(() => new Date(lastStart), [lastStart]);
   const currentCycle = useMemo(
@@ -33,227 +29,276 @@ export default function Dashboard() {
     [lastPeriodDate, cycleLen]
   );
 
-  // Always include today on the x-axis (handles late cycles visually)
+  // Keep x-axis long enough if cycle is running “late”
   const effectiveLen = Math.max(cycleLen, currentCycle.cycleDay);
 
-  // ---------------- Tasks ----------------
-  const [tasks, setTasks] = useState([
+  // --- Tasks (shared store) ---
+  const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: "Task A (label)", completed: false },
     { id: 2, text: "Task B (label)", completed: false },
     { id: 3, text: "Complete 3rd quarterly report", completed: false },
     { id: 4, text: "Prepare presentation slides", completed: false },
   ]);
-  const [newTask, setNewTask] = useState("");
 
   const toggleTask = (id: number) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
   };
 
-  const addTask = () => {
-    if (!newTask.trim()) return;
-    const optimalPhase = getTaskOptimalPhase(newTask);
-    const okNow = isOptimalTiming(newTask, currentCycle.phase);
-    setTasks((prev) => [...prev, { id: Date.now(), text: newTask.trim(), completed: false }]);
-    setNewTask("");
+  /* ============ Kanban grouping (RIGHT column) ============ */
+  type ColKey = "Menstrual" | "Follicular" | "Ovulatory" | "Early Luteal" | "Late Luteal";
+
+  const columns: { key: ColKey; desc: string }[] = [
+    { key: "Menstrual", desc: "Gentle planning, reflection" },
+    { key: "Follicular", desc: "Ideas, learning, building momentum" },
+    { key: "Ovulatory", desc: "Presenting, collaboration" },
+    { key: "Early Luteal", desc: "Deep focus, production" },
+    { key: "Late Luteal", desc: "Tidy up, admin, buffers" },
+  ];
+
+  function normalizePhase(raw: string | undefined | null): ColKey | "Luteal" {
+    if (!raw) return "Menstrual";
+    const s = String(raw).trim().toLowerCase();
+    if (["menstrual", "menses", "period", "bleeding"].includes(s)) return "Menstrual";
+    if (["follicular", "pre-ovulatory", "preovulatory"].includes(s)) return "Follicular";
+    if (["ovulatory", "ovulation", "mid-cycle", "midcycle"].includes(s)) return "Ovulatory";
+    if (["luteal", "post-ovulatory", "postovulatory"].includes(s)) return "Luteal";
+    return "Menstrual";
+  }
+
+  function bucketForTask(text: string): ColKey {
+    const phase = normalizePhase(getTaskOptimalPhase(text));
+    if (phase === "Luteal") {
+      const t = text.toLowerCase();
+      if (/(finish|review|admin|invoice|cleanup|polish|wrap|tidy|proof|bug|reconcile|file)/.test(t)) {
+        return "Late Luteal";
+      }
+      return "Early Luteal";
+    }
+    return phase as ColKey;
+  }
+
+  const initCols: Record<ColKey, Task[]> = {
+    Menstrual: [],
+    Follicular: [],
+    Ovulatory: [],
+    "Early Luteal": [],
+    "Late Luteal": [],
+  };
+
+  const tasksByCol = tasks.reduce<Record<ColKey, Task[]>>((acc, t) => {
+    const key = bucketForTask(t.text);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(t);
+    return acc;
+  }, { ...initCols });
+
+  // Add Task lives in the Kanban (RIGHT column)
+  const [newKanbanTask, setNewKanbanTask] = useState("");
+  const addTaskFromKanban = () => {
+    const text = newKanbanTask.trim();
+    if (!text) return;
+    const optimalPhase = getTaskOptimalPhase(text);
+    const okNow = isOptimalTiming(text, currentCycle.phase);
+    setTasks((prev) => [...prev, { id: Date.now(), text, completed: false }]);
+    setNewKanbanTask("");
     if (!okNow) {
       const phaseInfo = getOptimalPhaseInfo(optimalPhase);
-      console.log(`Tip: "${newTask}" would be optimal during ${phaseInfo.name} phase`);
+      console.log(`Tip: "${text}" would be optimal during ${phaseInfo.name} phase`);
     }
   };
 
-  // ---------------- Logs (optional quick log; UI sits under Tasks) ----------------
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [logEnergy, setLogEnergy] = useState<number>(4);
-  const [logMood, setLogMood] = useState<string>("😊");
-  const [logNote, setLogNote] = useState<string>("");
-  const energyStars = (n: number) => "⭐".repeat(Math.max(1, Math.min(n, 5)));
-  function addLog() {
-    const entry: LogEntry = {
-      id: Date.now(),
-      day: currentCycle.cycleDay,
-      phase: currentCycle.phaseName,
-      energy: Math.max(1, Math.min(Number(logEnergy) || 1, 5)),
-      mood: logMood,
-      note: logNote.trim(),
-      when: "Today",
-    };
-    setLogs((prev) => [entry, ...prev]);
-    setLogNote("");
-  }
+  // Long-term tasks (RIGHT column, under Kanban)
+  const [longTerm, setLongTerm] = useState<string[]>([
+    "Publish capstone paper",
+    "Plan Q4 product launch",
+    "Finish portfolio site",
+  ]);
+  const [newLong, setNewLong] = useState("");
+  const addLong = () => {
+    const t = newLong.trim();
+    if (!t) return;
+    setLongTerm((l) => [...l, t]);
+    setNewLong("");
+  };
 
-  <button className="bg-rose-500 text-white ..." data-text-white>
-  Save
-</button>
-
-
+  /* ============ Layout ============ 
+     XL and up:
+       LEFT  (span 1): Today’s Tasks → Hormone Graph → Info
+       RIGHT (span 2): Kanban (with Add Task) → Long-term tasks
+  */
   return (
     <div className="min-h-screen bg-[#FFF7F9]">
-  <div className="max-w-6xl mx-auto px-6 py-6 force-text-black">
-
-        {/* -------- Row 1: Two-column grid (Focus + Graph left, Tasks right) -------- */}
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
-  {/* LEFT: Today's Focus (top) + Hormone Graph (below) */}
-  <div className="space-y-6">
-    {/* Today's Focus */}
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-      <h2 className="text-xl font-semibold text-black mb-4">Today’s Focus</h2>
-      <div className="bg-[#FFF1F2] border border-[#FFE4E7] rounded-lg p-4 mb-4">
-        <div className="font-medium" style={{ color: currentCycle.phaseColor }}>
-          Day {currentCycle.cycleDay} — {currentCycle.phaseName}
-        </div>
-        <div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
-          {currentCycle.description}
-        </div>
-      </div>
-    </div>
-
-    {/* Hormone Graph */}
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
-        <div className="flex items-center gap-3 text-xs text-[#6B7280]">
-          <Legend swatch="#F43F5E" label="Estrogen (E2)" />
-          <Legend swatch="#FB7185" label="Progesterone (P4)" />
-          <Legend swatch="#22D3EE" label="Today" line />
-        </div>
-      </div>
-      <HormoneGraph
-        cycleLength={effectiveLen}
-        cycleDay={currentCycle.cycleDay}
-        heightDesktop={380}
-        heightMobile={280}
-      />
-
-<div className="mt-4 flex justify-center">
-  <LogPeriodButton
-    defaultDate={lastStart}
-    onSave={(iso) => setLastStart(iso)}
-  />
-</div>
-
-
-    </div>
-  </div>
-
-  {/* RIGHT: Tasks */}
-  <div className="space-y-6">
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-      <h2 className="text-xl font-semibold text-[#1F2937] mb-4">All Tasks</h2>
-
-      <div className="space-y-3 mb-4">
-        {tasks.map((task) => {
-          const optimalPhase = getTaskOptimalPhase(task.text);
-          const phaseInfo = getOptimalPhaseInfo(optimalPhase);
-          const okNow = isOptimalTiming(task.text, currentCycle.phase);
-          return (
-            <div
-              key={task.id}
-              className={`p-3 rounded-lg border-2 ${
-                okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => toggleTask(task.id)}
-                  className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
-                />
-                <span
-                  className={`flex-1 ${
-                    task.completed ? "line-through text-black" : "text-[#1F2937]"
-                  }`}
-                >
-                  {task.text}
-                </span>
-                <div className="flex items-center space-x-2">
-                  {okNow ? (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                      ✨ Optimal Now
-                    </span>
-                  ) : (
-                    <span
-                      className="px-2 py-1 text-xs rounded-full font-medium"
-                      style={{
-                        backgroundColor: getOptimalPhaseInfo(optimalPhase).color + "20",
-                        color: getOptimalPhaseInfo(optimalPhase).color,
-                      }}
+      <div className="w-full px-6 py-6 force-text-black">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* LEFT (1/3 width) */}
+          <div className="xl:col-span-1 space-y-8">
+            {/* Today’s Tasks (no add here) */}
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+              <h2 className="text-2xl font-bold mb-4">Today’s Tasks</h2>
+              <div className="space-y-3">
+                {tasks.map((task) => {
+                  const optimalPhase = getTaskOptimalPhase(task.text);
+                  const phaseInfo = getOptimalPhaseInfo(optimalPhase);
+                  const okNow = isOptimalTiming(task.text, currentCycle.phase);
+                  return (
+                    <div
+                      key={task.id}
+                      className={`p-3 rounded-lg border-2 ${
+                        okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
+                      }`}
                     >
-                      {phaseInfo.emoji} Best in {phaseInfo.name}
-                    </span>
-                  )}
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => toggleTask(task.id)}
+                          className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
+                        />
+                        <span className={`flex-1 ${task.completed ? "line-through" : ""}`}>{task.text}</span>
+                        <div className="flex items-center gap-2">
+                          {okNow ? (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                              ✨ Optimal Now
+                            </span>
+                          ) : (
+                            <span
+                              className="px-2 py-1 text-xs rounded-full font-medium"
+                              style={{
+                                backgroundColor: getOptimalPhaseInfo(optimalPhase).color + "20",
+                                color: getOptimalPhaseInfo(optimalPhase).color,
+                              }}
+                            >
+                              {phaseInfo.emoji} Best in {phaseInfo.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Hormone Graph + Log Period + Info */}
+            <section className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
+                <div className="flex items-center gap-3 text-xs text-[#6B7280]">
+                  <Legend swatch="#F43F5E" label="Estrogen (E2)" />
+                  <Legend swatch="#FB7185" label="Progesterone (P4)" />
+                  <Legend swatch="#22D3EE" label="Today" line />
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* Quick suggestions */}
-      <div className="mb-3 p-3 bg-rose-50 border border-[#FFE4E7] rounded-lg">
-        <div className="text-sm font-medium text-rose-700 mb-2">
-          Quick task ideas for your current phase:
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {currentCycle.optimalTasks.map((t, i) => (
-            <button
-              key={i}
-              onClick={() => setNewTask(t)}
-              className="px-3 py-1 bg-rose-100 text-rose-800 text-sm rounded-full hover:bg-rose-200 transition-colors"
-            >
-              + {t}
-            </button>
-          ))}
-        </div>
-      </div>
+              <HormoneGraph
+                cycleLength={effectiveLen}
+                cycleDay={currentCycle.cycleDay}
+                heightDesktop={380}
+                heightMobile={280}
+              />
 
-      {/* Add Task */}
-      <div className="flex space-x-2">
-        <input
-          type="text"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          placeholder="Add a new task..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
-        />
-        <button
-          onClick={addTask}
-          className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-        >
-          + Task
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+              <div className="mt-4 flex justify-center">
+                <LogPeriodButton defaultDate={lastStart} onSave={(iso) => setLastStart(iso)} />
+              </div>
 
+              <div className="mt-6">
+                <h3 className="text-base font-semibold mb-2">What am I looking at?</h3>
+                <p className="text-sm text-[#1F2937]">
+                  This chart is an educational illustration of typical estrogen (E2) and progesterone (P4)
+                  patterns across a cycle. Many people feel more creative and social as estrogen rises
+                  (follicular/ovulatory), and more focused on finishing and details when progesterone is
+                  higher (luteal). Everyone’s body is different—use this as a guide, not a rulebook.
+                </p>
+              </div>
+            </section>
+          </div>
 
-        {/* -------- Row 2: Hormone explainer -------- */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9] mt-8">
-          <div className="text-sm text-[#1F2937] font-semibold mb-2">What do these hormones do?</div>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-[#374151]">
-            <li>
-              <span className="font-medium">Estrogen (E2):</span> often linked with rising energy, mood,
-              and social drive as it climbs; low levels can feel flatter or lower-energy for some.
-            </li>
-            <li>
-              <span className="font-medium">Progesterone (P4):</span> tends to support focus, calm, and
-              stability mid-luteal; when it drops late luteal, some notice irritability or lower patience.
-            </li>
-            <li>
-              <span className="font-medium">Together:</span> mid-cycle higher estrogen can make
-              collaboration/presentations feel easier; mid-luteal higher progesterone can steady detail
-              work and finishing. These visuals are educational approximations, not medical measurements.
-            </li>
-          </ul>
+          {/* RIGHT (2/3 width) */}
+          <aside className="xl:col-span-2 space-y-8">
+            {/* Kanban with Add Task */}
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+              <div className="flex items-end justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Plan by Cycle Phase</h2>
+                  <p className="text-xs text-black/70">Add a task here and we’ll slot it by phase.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newKanbanTask}
+                    onChange={(e) => setNewKanbanTask(e.target.value)}
+                    placeholder="Add task…"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent placeholder:text-black/60"
+                    onKeyDown={(e) => e.key === "Enter" && addTaskFromKanban()}
+                  />
+                  <button
+                    onClick={addTaskFromKanban}
+                    className="px-3 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                    data-text-white
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-flow-col auto-cols-[minmax(220px,1fr)] gap-4 overflow-x-auto pb-2">
+                {columns.map((col) => (
+                  <div key={col.key} className="rounded-lg border border-[#F1F5F9] bg-[#FFF7F9]">
+                    <div className="px-3 py-2 border-b border-[#F1F5F9]">
+                      <div className="font-semibold">{col.key}</div>
+                      <div className="text-xs text-black/70">{col.desc}</div>
+                    </div>
+                    <div className="p-3 space-y-2">
+                      {tasksByCol[col.key].length === 0 && (
+                        <div className="text-xs text-black/50 italic">No tasks here yet</div>
+                      )}
+                      {tasksByCol[col.key].map((t) => (
+                        <div key={t.id} className="p-2 rounded-md bg-white border border-[#F1F5F9] text-sm">
+                          {t.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Long-term tasks */}
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+              <h2 className="text-2xl font-bold mb-4">Your Long-term Tasks</h2>
+              <ul className="list-disc pl-5 space-y-2">
+                {longTerm.map((t, i) => (
+                  <li key={i}>{t}</li>
+                ))}
+              </ul>
+              <div className="mt-4 flex gap-2">
+                <input
+                  type="text"
+                  value={newLong}
+                  onChange={(e) => setNewLong(e.target.value)}
+                  placeholder="Add a long-term task…"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent placeholder:text-black/60"
+                  onKeyDown={(e) => e.key === "Enter" && addLong()}
+                />
+                <button
+                  onClick={addLong}
+                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                  data-text-white
+                >
+                  + Add
+                </button>
+              </div>
+            </section>
+          </aside>
         </div>
       </div>
     </div>
   );
 }
 
-// ---------------- Legend chip ----------------
+/* =========================
+   Small UI bits
+   ========================= */
 function Legend({ swatch, label, line = false }: { swatch: string; label: string; line?: boolean }) {
   return (
     <span className="inline-flex items-center gap-1">
@@ -267,7 +312,6 @@ function Legend({ swatch, label, line = false }: { swatch: string; label: string
   );
 }
 
-// ---------------- Log Period Button --------
 function LogPeriodButton({
   defaultDate,
   onSave,
@@ -277,44 +321,32 @@ function LogPeriodButton({
 }) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(defaultDate);
-
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
-                   bg-rose-500 text-white hover:bg-rose-600 transition-colors
-                   shadow-sm"
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-colors shadow-sm"
+        data-text-white
       >
         + Log period
       </button>
 
       {open && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setOpen(false)}
-          />
-          {/* Dialog */}
-          <div className="relative z-50 w-full max-w-sm bg-white rounded-xl
-                          border border-[#F1F5F9] shadow-lg p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
+          <div className="relative z-50 w-full max-w-sm bg-white rounded-xl border border-[#F1F5F9] shadow-lg p-4">
             <div className="text-base font-semibold mb-2">Log period start (Day 1)</div>
-            <p className="text-sm text-black-600 mb-3">
+            <p className="text-sm text-black/80 mb-3">
               Pick the first day of your most recent period. We’ll recalc your cycle.
             </p>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md
-                         focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
             />
             <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setOpen(false)}
-                className="px-3 py-1.5 rounded-md border hover:bg-gray-50"
-              >
+              <button onClick={() => setOpen(false)} className="px-3 py-1.5 rounded-md border hover:bg-gray-50">
                 Cancel
               </button>
               <button
@@ -323,6 +355,7 @@ function LogPeriodButton({
                   setOpen(false);
                 }}
                 className="px-3 py-1.5 rounded-md bg-rose-500 text-white hover:bg-rose-600"
+                data-text-white
               >
                 Save
               </button>
@@ -334,8 +367,9 @@ function LogPeriodButton({
   );
 }
 
-
-// ---------------- Hormone Graph with bands, fills, tooltips ----------------
+/* =========================
+   Hormone Graph
+   ========================= */
 function HormoneGraph({
   cycleLength,
   cycleDay,
@@ -347,9 +381,8 @@ function HormoneGraph({
   heightDesktop?: number;
   heightMobile?: number;
 }) {
-  // Responsive height
   const H = typeof window !== "undefined" && window.innerWidth < 640 ? heightMobile : heightDesktop;
-  const W = 600; // viewBox width (scales to container)
+  const W = 600;
   const PAD = 28;
 
   const x = (day: number) =>
@@ -360,7 +393,7 @@ function HormoneGraph({
     return bottom - clamp01(val) * (bottom - top);
   };
 
-  // Ovulation estimate and phase boundaries (adaptive)
+  // Phase boundaries
   const ovu = clamp(Math.round(cycleLength - 14), 12, 20);
   const menstrualEnd = 5;
   const follicularStart = 6;
@@ -370,11 +403,11 @@ function HormoneGraph({
   const lutealStart = Math.min(cycleLength, ovulatoryEnd + 1);
   const lutealEnd = cycleLength;
 
-  // Curves (educational shapes 0..1)
+  // Curves (educational 0..1)
   const estrogen = (d: number) => {
-    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1) / 1.8)); // rise to peak vicinity
-    const peak = Math.exp(-Math.pow((d - ovu) / 2.2, 2)); // ovulatory peak
-    const luteal = 0.3 * Math.exp(-Math.pow((d - (ovu + 6)) / 4.0, 2)); // small luteal bump
+    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1) / 1.8));
+    const peak = Math.exp(-Math.pow((d - ovu) / 2.2, 2));
+    const luteal = 0.3 * Math.exp(-Math.pow((d - (ovu + 6)) / 4.0, 2));
     return clamp01(0.15 + 0.6 * a + 0.9 * peak + luteal);
   };
   const progesterone = (d: number) => {
@@ -387,14 +420,11 @@ function HormoneGraph({
   const e2Path = pathFrom(days, (d) => ({ x: x(d), y: y(estrogen(d)) }));
   const p4Path = pathFrom(days, (d) => ({ x: x(d), y: y(progesterone(d)) }));
 
-  // Areas (under the lines)
   const e2Area = areaFrom(days, (d) => ({ x: x(d), y: y(estrogen(d)) }), H - 28);
   const p4Area = areaFrom(days, (d) => ({ x: x(d), y: y(progesterone(d)) }), H - 28);
 
-  // Tooltip state
   const [tip, setTip] = useState<{ show: boolean; left: number; top: number; day: number } | null>(null);
 
-  // Qualitative state helper
   const qualitative = (curve: (d: number) => number, d: number) => {
     const v = curve(d);
     const vPrev = curve(Math.max(1, d - 1));
@@ -407,7 +437,6 @@ function HormoneGraph({
     return `${capitalize(level)}, ${dir}`;
   };
 
-  // Phase bands rectangles (x positions by day)
   const bandRects = [
     { start: 1, end: menstrualEnd, fill: "rgba(244,63,94,0.06)", label: "Menstrual" },
     { start: follicularStart, end: follicularEnd, fill: "rgba(251,146,60,0.06)", label: "Follicular" },
@@ -415,35 +444,20 @@ function HormoneGraph({
     { start: lutealStart, end: lutealEnd, fill: "rgba(251,113,133,0.06)", label: "Luteal" },
   ].filter((b) => b.end >= b.start);
 
-  // Handlers
   function onMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
     const { left, top, width } = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const relX = e.clientX - left;
-    const plotW = width;
-    const inner = plotW - (PAD * 2 * plotW) / W;
-    const px0 = (PAD * plotW) / W;
+    const inner = width - (PAD * 2 * width) / W;
+    const px0 = (PAD * width) / W;
     const ratio = clamp((relX - px0) / inner, 0, 1);
     const day = Math.max(1, Math.min(cycleLength, Math.round(1 + ratio * (cycleLength - 1))));
-    setTip({
-      show: true,
-      left: e.clientX - left + 12,
-      top: e.clientY - top + 12,
-      day,
-    });
+    setTip({ show: true, left: e.clientX - left + 12, top: e.clientY - top + 12, day });
   }
   function onLeave() {
     setTip(null);
   }
   function onClick() {
-    // Mobile tap: if no tip, show centered for today
-    if (!tip) {
-      setTip({
-        show: true,
-        left: (x(cycleDay) / W) * (W - 0) + 16,
-        top: 40,
-        day: cycleDay,
-      });
-    }
+    if (!tip) setTip({ show: true, left: 240, top: 40, day: cycleDay });
   }
 
   return (
@@ -464,33 +478,21 @@ function HormoneGraph({
           return <line key={i} x1={PAD} y1={yTick} x2={W - PAD} y2={yTick} stroke="#F1F5F9" />;
         })}
 
-        {/* phase bands (behind) */}
+        {/* phase bands */}
         {bandRects.map((b, i) => {
           const x1 = x(b.start);
           const x2 = x(b.end);
           return (
             <g key={i}>
-              <rect
-                x={x1}
-                y={16}
-                width={Math.max(0, x2 - x1)}
-                height={H - 44}
-                fill={b.fill}
-                rx={3}
-              />
-              <text
-                x={x1 + 6}
-                y={28}
-                fontSize="10"
-                fill="#6B7280"
-              >
+              <rect x={x1} y={16} width={Math.max(0, x2 - x1)} height={H - 44} fill={b.fill} rx={3} />
+              <text x={x1 + 6} y={28} fontSize="10" fill="#6B7280">
                 {b.label}
               </text>
             </g>
           );
         })}
 
-        {/* areas */}
+        {/* filled areas */}
         <path d={e2Area} fill="rgba(244, 63, 94, 0.15)" />
         <path d={p4Area} fill="rgba(251, 113, 133, 0.15)" />
 
@@ -514,13 +516,7 @@ function HormoneGraph({
         <text x={x(1)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
           1
         </text>
-        <text
-          x={x(Math.ceil(cycleLength / 2))}
-          y={H - 8}
-          fontSize="10"
-          textAnchor="middle"
-          fill="#6B7280"
-        >
+        <text x={x(Math.ceil(cycleLength / 2))} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
           {Math.ceil(cycleLength / 2)}
         </text>
         <text x={x(cycleLength)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
@@ -530,21 +526,18 @@ function HormoneGraph({
 
       {/* tooltip */}
       {tip?.show && (
-        <div
-          className="absolute pointer-events-none"
-          style={{ left: tip.left, top: tip.top }}
-        >
+        <div className="absolute pointer-events-none" style={{ left: tip.left, top: tip.top }}>
           <div className="bg-white border border-[#F1F5F9] shadow-sm rounded-md px-3 py-2 text-xs text-[#111827]">
             <div className="font-medium mb-1">Day {tip.day}</div>
             <div className="flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#F43F5E" }} />
               <span className="text-[#6B7280]">E2:</span>{" "}
-              <span className="font-medium">{qualitative(estrogen, tip.day)}</span>
+              <span className="font-medium">{qualitative((d) => estrogen(d), tip.day)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#FB7185" }} />
               <span className="text-[#6B7280]">P4:</span>{" "}
-              <span className="font-medium">{qualitative(progesterone, tip.day)}</span>
+              <span className="font-medium">{qualitative((d) => progesterone(d), tip.day)}</span>
             </div>
           </div>
         </div>
@@ -553,7 +546,9 @@ function HormoneGraph({
   );
 }
 
-// ---------------- Helpers ----------------
+/* =========================
+   Helpers
+   ========================= */
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
@@ -579,14 +574,9 @@ function areaFrom<T>(
   const pts = arr.map(map);
   if (pts.length === 0) return "";
   const start = `M ${pts[0].x.toFixed(2)} ${baselineY.toFixed(2)}`;
-  const lines = pts.map((p, i) => `${i === 0 ? "L" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+  const lines = pts.map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
   const end = `L ${pts[pts.length - 1].x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
   return `${start} ${lines} ${end}`;
-}
-function formatISOtoHuman(iso: string) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
