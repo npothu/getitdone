@@ -23,14 +23,24 @@ export default function Dashboard() {
     ))
   }
 
+
   const addTask = () => {
     if (newTask.trim()) {
+      const optimalPhase = getTaskOptimalPhase(newTask);
+      const isOptimal = isOptimalTiming(newTask, currentCycle.phase);
+      
       setTasks([...tasks, { 
         id: Date.now(), 
         text: newTask, 
         completed: false 
       }])
       setNewTask('')
+      
+      // Optional: Show a quick notification about optimal timing
+      if (!isOptimal) {
+        const phaseInfo = getOptimalPhaseInfo(optimalPhase);
+        console.log(`Tip: "${newTask}" would be optimal during ${phaseInfo.name} phase`);
+      }
     }
   }
 
@@ -119,6 +129,22 @@ export default function Dashboard() {
   })}
 </div>
 
+{/* Task Category Helper */}
+<div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+  <div className="text-sm font-medium text-blue-800 mb-2">Quick task ideas for your current phase:</div>
+  <div className="flex flex-wrap gap-2">
+    {currentCycle.optimalTasks.map((task, index) => (
+      <button
+        key={index}
+        onClick={() => setNewTask(task)}
+        className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full hover:bg-blue-200 transition-colors"
+      >
+        + {task}
+      </button>
+    ))}
+  </div>
+</div>
+
               {/* Add Task */}
               <div className="flex space-x-2">
                 <input
@@ -139,65 +165,78 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Right Side - Current Phase & Task Queue */}
-          <div className="space-y-6">
-            {/* Today's Focus */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Today's Focus</h2>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="font-medium" style={{ color: currentCycle.phaseColor }}>Day {currentCycle.cycleDay} - {currentCycle.phaseName}</div>
-<div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
-  {currentCycle.description}
-</div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Energy Level:</span>
-                  <span className="font-medium">Rising ↗️</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Best For:</span>
-                  <span className="font-medium">Creative work</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Next Phase:</span>
-                  <span className="font-medium">Ovulatory (5 days)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Recommended Tasks */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Recommended for This Phase</h2>
-              <div className="space-y-3">
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="font-medium text-green-800">✨ Start a new project</div>
-                  <div className="text-sm text-green-700">Your brain loves novelty right now</div>
-                </div>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="font-medium text-blue-800">📚 Learn something new</div>
-                  <div className="text-sm text-blue-700">Great time for absorbing information</div>
-                </div>
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="font-medium text-purple-800">💡 Brainstorm ideas</div>
-                  <div className="text-sm text-purple-700">Creative thinking is at its peak</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <button className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                + Task
-              </button>
-              <button className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                + Log
-              </button>
-            </div>
-          </div>
-        </div>
+          {/* Right Side - Logging History */}
+<div className="space-y-6">
+  {/* Today's Focus */}
+  <div className="bg-white rounded-lg p-6 shadow-sm border">
+    <h2 className="text-xl font-semibold text-gray-900 mb-4">Today's Focus</h2>
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+      <div className="font-medium" style={{ color: currentCycle.phaseColor }}>Day {currentCycle.cycleDay} - {currentCycle.phaseName}</div>
+      <div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
+        {currentCycle.description}
       </div>
     </div>
-  )
+    
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600">Energy Level:</span>
+        <span className="font-medium">Rising</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600">Best For:</span>
+        <span className="font-medium">Creative work</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600">Next Phase:</span>
+        <span className="font-medium">Ovulatory (5 days)</span>
+      </div>
+    </div>
+  </div>
+
+  {/* Daily Logs */}
+  <div className="bg-white rounded-lg p-6 shadow-sm border">
+    <h2 className="text-xl font-semibold text-gray-900 mb-4">Daily Logs</h2>
+    
+    {/* Logging History */}
+    <div className="space-y-3 mb-4">
+      <div className="p-3 bg-gray-50 rounded-lg">
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-sm font-medium text-gray-900">Day {currentCycle.cycleDay} - {currentCycle.phaseName}</span>
+          <span className="text-xs text-gray-500">Today</span>
+        </div>
+        <div className="text-sm text-gray-600">Energy: ⭐⭐⭐⭐ | Mood: 😊</div>
+        <div className="text-xs text-gray-500 mt-1">Feeling productive and creative today</div>
+      </div>
+      
+      <div className="p-3 bg-gray-50 rounded-lg">
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-sm font-medium text-gray-900">Day {currentCycle.cycleDay - 1} - {currentCycle.phaseName}</span>
+          <span className="text-xs text-gray-500">Yesterday</span>
+        </div>
+        <div className="text-sm text-gray-600">Energy: ⭐⭐⭐ | Mood: 😐</div>
+        <div className="text-xs text-gray-500 mt-1">Started new project, feeling motivated</div>
+      </div>
+      
+      <div className="p-3 bg-gray-50 rounded-lg">
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-sm font-medium text-gray-900">Day {currentCycle.cycleDay - 2} - {currentCycle.phaseName}</span>
+          <span className="text-xs text-gray-500">2 days ago</span>
+        </div>
+        <div className="text-sm text-gray-600">Energy: ⭐⭐ | Mood: 😔</div>
+        <div className="text-xs text-gray-500 mt-1">Low energy, took it easy</div>
+      </div>
+    </div>
+
+    {/* Add Log Button */}
+    <button 
+      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+    >
+      + Log Today
+    </button>
+  </div>
+</div>
+    </div>
+    </div>
+    </div>
+)
 }
