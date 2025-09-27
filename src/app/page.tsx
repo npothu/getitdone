@@ -123,7 +123,7 @@ export default function Dashboard() {
 
   /* ============ Layout ============ 
      XL and up:
-       LEFT  (span 1): Today’s Tasks → Hormone Graph → Info
+       LEFT  (span 1): Hormone Graph → Today’s Tasks
        RIGHT (span 2): Kanban (with Add Task) → Long-term tasks
   */
   return (
@@ -132,6 +132,39 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* LEFT (1/3 width) */}
           <div className="xl:col-span-1 space-y-8">
+            {/* Hormone Graph + Log Period + Info */}
+            <section className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
+                <div className="flex items-center gap-3 text-xs text-[#6B7280]">
+                  <Legend swatch="#F43F5E" label="Estrogen (E2)" />
+                  <Legend swatch="#FB7185" label="Progesterone (P4)" />
+                  <Legend swatch="#22D3EE" label="Today" line />
+                </div>
+              </div>
+
+              <HormoneGraph
+                cycleLength={effectiveLen}
+                cycleDay={currentCycle.cycleDay}
+                heightDesktop={380}
+                heightMobile={280}
+              />
+
+              <div className="mt-4 flex justify-center">
+                <LogPeriodButton defaultDate={lastStart} onSave={(iso) => setLastStart(iso)} />
+              </div>
+
+              <div className="mt-6">
+                <h3 className="text-base font-semibold mb-2">What am I looking at?</h3>
+                <p className="text-sm text-[#1F2937]">
+                  This chart is an educational illustration of typical estrogen (E2) and progesterone (P4)
+                  patterns across a cycle. Many people feel more creative and social as estrogen rises
+                  (follicular/ovulatory), and more focused on finishing and details when progesterone is
+                  higher (luteal). Everyone’s body is different—use this as a guide, not a rulebook.
+                </p>
+              </div>
+            </section>
+
             {/* Today’s Tasks (no add here) */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
               <h2 className="text-2xl font-bold mb-4">Today’s Tasks</h2>
@@ -176,39 +209,6 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
-              </div>
-            </section>
-
-            {/* Hormone Graph + Log Period + Info */}
-            <section className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
-                <div className="flex items-center gap-3 text-xs text-[#6B7280]">
-                  <Legend swatch="#F43F5E" label="Estrogen (E2)" />
-                  <Legend swatch="#FB7185" label="Progesterone (P4)" />
-                  <Legend swatch="#22D3EE" label="Today" line />
-                </div>
-              </div>
-
-              <HormoneGraph
-                cycleLength={effectiveLen}
-                cycleDay={currentCycle.cycleDay}
-                heightDesktop={380}
-                heightMobile={280}
-              />
-
-              <div className="mt-4 flex justify-center">
-                <LogPeriodButton defaultDate={lastStart} onSave={(iso) => setLastStart(iso)} />
-              </div>
-
-              <div className="mt-6">
-                <h3 className="text-base font-semibold mb-2">What am I looking at?</h3>
-                <p className="text-sm text-[#1F2937]">
-                  This chart is an educational illustration of typical estrogen (E2) and progesterone (P4)
-                  patterns across a cycle. Many people feel more creative and social as estrogen rises
-                  (follicular/ovulatory), and more focused on finishing and details when progesterone is
-                  higher (luteal). Everyone’s body is different—use this as a guide, not a rulebook.
-                </p>
               </div>
             </section>
           </div>
@@ -405,7 +405,7 @@ function HormoneGraph({
 
   // Curves (educational 0..1)
   const estrogen = (d: number) => {
-    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1) / 1.8));
+    const a = sigmoid((d - 6) / 3) * (1 - sigmoid((d - ovu + 1)) / 1.8);
     const peak = Math.exp(-Math.pow((d - ovu) / 2.2, 2));
     const luteal = 0.3 * Math.exp(-Math.pow((d - (ovu + 6)) / 4.0, 2));
     return clamp01(0.15 + 0.6 * a + 0.9 * peak + luteal);
