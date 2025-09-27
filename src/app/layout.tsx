@@ -22,8 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#FFF7F9] text-black`}>
         {/* Site Header */}
-        <header className="glossy-header sticky top-0 z-30 w-full border-b border-[#EDEFF3]">
-  <div className="max-w-6xl mx-auto px-6 py-4 md:py-5 flex items-center justify-between">
+        <header className="glossy-header sticky top-0 z-50 w-full border-b border-[#EDEFF3]">
+  <div className="max-w-6xl mx-2 px-9 py-7 flex items-center justify-between">
     <div
       className="metallic-text inline-block leading-none
                  text-3xl md:text-4xl lg:text-[44px] font-extrabold tracking-tight
@@ -35,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <div />
   </div>
 </header>
-
 
         {children}
       </body>

@@ -109,20 +109,6 @@ export default function Dashboard() {
     }
   };
 
-  // Long-term tasks (only place you can add)
-  const [longTerm, setLongTerm] = useState<string[]>([
-    "Publish capstone paper",
-    "Plan Q4 product launch",
-    "Finish portfolio site",
-  ]);
-  const [newLong, setNewLong] = useState("");
-  const addLong = () => {
-    const t = newLong.trim();
-    if (!t) return;
-    setLongTerm((l) => [...l, t]);
-    setNewLong("");
-  };
-
   /* ============ Layout ============ 
      XL and up:
        LEFT  (span 1): Hormone Graph
@@ -288,33 +274,6 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
-              </div>
-            </section>
-
-            {/* Long-term tasks — WIDE (only place to add) */}
-            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-              <h2 className="text-2xl font-bold mb-4">Your Long-term Tasks</h2>
-              <ul className="list-disc pl-5 space-y-2">
-                {longTerm.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
-              </ul>
-              <div className="mt-4 flex gap-2">
-                <input
-                  type="text"
-                  value={newLong}
-                  onChange={(e) => setNewLong(e.target.value)}
-                  placeholder="Add a long-term task…"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent placeholder:text-black/60"
-                  onKeyDown={(e) => e.key === "Enter" && addLong()}
-                />
-                <button
-                  onClick={addLong}
-                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-                  data-text-white
-                >
-                  + Add
-                </button>
               </div>
             </section>
           </aside>
