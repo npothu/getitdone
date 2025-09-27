@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import CedarTaskScheduler from '../components/CedarTaskScheduler'
+import CedarTaskDisplay from '../components/CedarTaskDisplay'
+import { useCedarTasks } from '../hooks/useCedarTasks'
+
 import {
   getCurrentCycleInfo,
   getTaskOptimalPhase,
@@ -21,6 +25,8 @@ type LogEntry = {
 
 // ---------------- Page ----------------
 export default function Dashboard() {
+  const { cedarTasks, addCedarTask, toggleCedarTask } = useCedarTasks()
+
   // Minimal cycle state (defaults)
   const [lastStart, setLastStart] = useState<string>(
     new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -141,6 +147,16 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+            {/* Cedar Task Scheduler */}
+            <CedarTaskScheduler
+              currentCycle={currentCycle}
+              onTaskScheduled={addCedarTask}
+            />
+
+            {/* Cedar Task Display */}
+            <CedarTaskDisplay
+              currentCycle={currentCycle}
+            />
 
             {/* Tasks */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
@@ -154,9 +170,8 @@ export default function Dashboard() {
                   return (
                     <div
                       key={task.id}
-                      className={`p-3 rounded-lg border-2 ${
-                        okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
-                      }`}
+                      className={`p-3 rounded-lg border-2 ${okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <input
@@ -166,9 +181,8 @@ export default function Dashboard() {
                           className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
                         />
                         <span
-                          className={`flex-1 ${
-                            task.completed ? "line-through text-gray-500" : "text-[#1F2937]"
-                          }`}
+                          className={`flex-1 ${task.completed ? "line-through text-gray-500" : "text-[#1F2937]"
+                            }`}
                         >
                           {task.text}
                         </span>
