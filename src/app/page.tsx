@@ -6,7 +6,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([
     { id: 1, text: 'Task A (label)', completed: false },
     { id: 2, text: 'Task B (label)', completed: false },
-    { id: 3, text: 'Complete quarterly report', completed: false },
+    { id: 3, text: 'Complete 3rd quarterly report', completed: false },
     { id: 4, text: 'Prepare presentation slides', completed: false },
   ])
 
