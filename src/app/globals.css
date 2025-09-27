@@ -127,3 +127,20 @@ body {
   background-clip: text;
 }
 
+/* Default site text is black */
+@layer base {
+  html, body {
+    color: #000000;
+  }
+}
+
+/* Scope utility: force black for everything inside, EXCEPT things that should stay white */
+.force-text-black *:not(.text-white):not([data-text-white]):not(button.bg-rose-500):not(button.bg-blue-600):not(.btn) {
+  color: #000000 !important;
+}
+
+/* Optional: make placeholder text darker too */
+.force-text-black ::placeholder {
+  color: rgba(0,0,0,0.6);
+}
+

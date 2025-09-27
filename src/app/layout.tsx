@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#FFF7F9] text-gray-900`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#FFFFFF] text-black`}>
         {/* Site Header */}
         <header className="glossy-header sticky top-0 z-30 w-full border-b border-[#EDEFF3]">
   <div className="max-w-6xl mx-auto px-6 py-4 md:py-5 flex items-center justify-between">

@@ -81,224 +81,153 @@ export default function Dashboard() {
     setLogNote("");
   }
 
+  <button className="bg-rose-500 text-white ..." data-text-white>
+  Save
+</button>
+
+
   return (
     <div className="min-h-screen bg-[#FFF7F9]">
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* -------- Row 0: Last Period Tracker bar -------- */}
-        <TopTracker
-          lastStart={lastStart}
-          cycleDay={currentCycle.cycleDay}
-          onPickDate={(iso) => setLastStart(iso)}
-        />
+  <div className="max-w-6xl mx-auto px-6 py-6 force-text-black">
 
-        {/* -------- Row 1: Two-column grid (Graph left, Focus+Tasks right) -------- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
-          {/* LEFT: Hormone Graph */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
-              <div className="flex items-center gap-3 text-xs text-[#6B7280]">
-                <Legend swatch="#F43F5E" label="Estrogen (E2)" />
-                <Legend swatch="#FB7185" label="Progesterone (P4)" />
-                <Legend swatch="#22D3EE" label="Today" line />
-              </div>
-            </div>
-            <HormoneGraph
-              cycleLength={effectiveLen}
-              cycleDay={currentCycle.cycleDay}
-              heightDesktop={380}
-              heightMobile={280}
-            />
-          </div>
-
-          {/* RIGHT: Today’s Focus (top) + Tasks (bottom) */}
-          <div className="space-y-6">
-            {/* Today's Focus */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-              <h2 className="text-xl font-semibold text-[#1F2937] mb-4">Today’s Focus</h2>
-              <div className="bg-[#FFF1F2] border border-[#FFE4E7] rounded-lg p-4 mb-4">
-                <div className="font-medium" style={{ color: currentCycle.phaseColor }}>
-                  Day {currentCycle.cycleDay} — {currentCycle.phaseName}
-                </div>
-                <div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
-                  {currentCycle.description}
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Predicted Energy Level:</span>
-                  <span className="font-medium">Rising</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Best For:</span>
-                  <span className="font-medium">Creative work</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Next Phase:</span>
-                  <span className="font-medium">
-                    Ovulatory (≈ {Math.max(0, 14 - currentCycle.cycleDay)} days)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tasks */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-              <h2 className="text-xl font-semibold text-[#1F2937] mb-4">Tasks</h2>
-
-              <div className="space-y-3 mb-4">
-                {tasks.map((task) => {
-                  const optimalPhase = getTaskOptimalPhase(task.text);
-                  const phaseInfo = getOptimalPhaseInfo(optimalPhase);
-                  const okNow = isOptimalTiming(task.text, currentCycle.phase);
-                  return (
-                    <div
-                      key={task.id}
-                      className={`p-3 rounded-lg border-2 ${
-                        okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => toggleTask(task.id)}
-                          className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
-                        />
-                        <span
-                          className={`flex-1 ${
-                            task.completed ? "line-through text-gray-500" : "text-[#1F2937]"
-                          }`}
-                        >
-                          {task.text}
-                        </span>
-                        <div className="flex items-center space-x-2">
-                          {okNow ? (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                              ✨ Optimal Now
-                            </span>
-                          ) : (
-                            <span
-                              className="px-2 py-1 text-xs rounded-full font-medium"
-                              style={{
-                                backgroundColor: getOptimalPhaseInfo(optimalPhase).color + "20",
-                                color: getOptimalPhaseInfo(optimalPhase).color,
-                              }}
-                            >
-                              {phaseInfo.emoji} Best in {phaseInfo.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Quick suggestions */}
-              <div className="mb-3 p-3 bg-rose-50 border border-[#FFE4E7] rounded-lg">
-                <div className="text-sm font-medium text-rose-700 mb-2">
-                  Quick task ideas for your current phase:
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {currentCycle.optimalTasks.map((t, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setNewTask(t)}
-                      className="px-3 py-1 bg-rose-100 text-rose-800 text-sm rounded-full hover:bg-rose-200 transition-colors"
-                    >
-                      + {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Add Task */}
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  placeholder="Add a new task..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-                  onKeyDown={(e) => e.key === "Enter" && addTask()}
-                />
-                <button
-                  onClick={addTask}
-                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-                >
-                  + Task
-                </button>
-              </div>
-
-              {/* Optional quick log */}
-              <div className="mt-6 border-t pt-4">
-                <h3 className="font-semibold mb-2">Daily Log</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                  <label className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-600 w-24">Energy (1–5)</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={5}
-                      value={logEnergy}
-                      onChange={(e) => setLogEnergy(Number(e.target.value))}
-                      className="w-20 px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-                    />
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-600 w-16">Mood</span>
-                    <select
-                      value={logMood}
-                      onChange={(e) => setLogMood(e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-                    >
-                      <option>😊</option>
-                      <option>😐</option>
-                      <option>😔</option>
-                      <option>😤</option>
-                      <option>🤩</option>
-                    </select>
-                  </label>
-                  <div className="sm:col-span-3">
-                    <input
-                      type="text"
-                      value={logNote}
-                      onChange={(e) => setLogNote(e.target.value)}
-                      placeholder="What should we remember about today? (optional)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-                      onKeyDown={(e) => e.key === "Enter" && addLog()}
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={addLog}
-                  className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-                >
-                  + Log Today
-                </button>
-                {logs.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {logs.map((log) => (
-                      <div key={log.id} className="p-2 bg-gray-50 rounded border text-sm">
-                        <div className="flex justify-between">
-                          <span>
-                            Day {log.day} — {log.phase}
-                          </span>
-                          <span className="text-xs text-gray-500">{log.when}</span>
-                        </div>
-                        <div className="text-gray-600">
-                          Energy: {energyStars(log.energy)} | Mood: {log.mood}
-                        </div>
-                        {log.note && <div className="text-xs text-gray-500">{log.note}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* -------- Row 1: Two-column grid (Focus + Graph left, Tasks right) -------- */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+  {/* LEFT: Today's Focus (top) + Hormone Graph (below) */}
+  <div className="space-y-6">
+    {/* Today's Focus */}
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+      <h2 className="text-xl font-semibold text-black mb-4">Today’s Focus</h2>
+      <div className="bg-[#FFF1F2] border border-[#FFE4E7] rounded-lg p-4 mb-4">
+        <div className="font-medium" style={{ color: currentCycle.phaseColor }}>
+          Day {currentCycle.cycleDay} — {currentCycle.phaseName}
         </div>
+        <div className="text-sm mt-1" style={{ color: currentCycle.phaseColor }}>
+          {currentCycle.description}
+        </div>
+      </div>
+    </div>
+
+    {/* Hormone Graph */}
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
+        <div className="flex items-center gap-3 text-xs text-[#6B7280]">
+          <Legend swatch="#F43F5E" label="Estrogen (E2)" />
+          <Legend swatch="#FB7185" label="Progesterone (P4)" />
+          <Legend swatch="#22D3EE" label="Today" line />
+        </div>
+      </div>
+      <HormoneGraph
+        cycleLength={effectiveLen}
+        cycleDay={currentCycle.cycleDay}
+        heightDesktop={380}
+        heightMobile={280}
+      />
+
+<div className="mt-4 flex justify-center">
+  <LogPeriodButton
+    defaultDate={lastStart}
+    onSave={(iso) => setLastStart(iso)}
+  />
+</div>
+
+
+    </div>
+  </div>
+
+  {/* RIGHT: Tasks */}
+  <div className="space-y-6">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+      <h2 className="text-xl font-semibold text-[#1F2937] mb-4">All Tasks</h2>
+
+      <div className="space-y-3 mb-4">
+        {tasks.map((task) => {
+          const optimalPhase = getTaskOptimalPhase(task.text);
+          const phaseInfo = getOptimalPhaseInfo(optimalPhase);
+          const okNow = isOptimalTiming(task.text, currentCycle.phase);
+          return (
+            <div
+              key={task.id}
+              className={`p-3 rounded-lg border-2 ${
+                okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => toggleTask(task.id)}
+                  className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
+                />
+                <span
+                  className={`flex-1 ${
+                    task.completed ? "line-through text-black" : "text-[#1F2937]"
+                  }`}
+                >
+                  {task.text}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {okNow ? (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                      ✨ Optimal Now
+                    </span>
+                  ) : (
+                    <span
+                      className="px-2 py-1 text-xs rounded-full font-medium"
+                      style={{
+                        backgroundColor: getOptimalPhaseInfo(optimalPhase).color + "20",
+                        color: getOptimalPhaseInfo(optimalPhase).color,
+                      }}
+                    >
+                      {phaseInfo.emoji} Best in {phaseInfo.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick suggestions */}
+      <div className="mb-3 p-3 bg-rose-50 border border-[#FFE4E7] rounded-lg">
+        <div className="text-sm font-medium text-rose-700 mb-2">
+          Quick task ideas for your current phase:
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {currentCycle.optimalTasks.map((t, i) => (
+            <button
+              key={i}
+              onClick={() => setNewTask(t)}
+              className="px-3 py-1 bg-rose-100 text-rose-800 text-sm rounded-full hover:bg-rose-200 transition-colors"
+            >
+              + {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Add Task */}
+      <div className="flex space-x-2">
+        <input
+          type="text"
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          placeholder="Add a new task..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+          onKeyDown={(e) => e.key === "Enter" && addTask()}
+        />
+        <button
+          onClick={addTask}
+          className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+        >
+          + Task
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
         {/* -------- Row 2: Hormone explainer -------- */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9] mt-8">
@@ -324,70 +253,6 @@ export default function Dashboard() {
   );
 }
 
-// ---------------- Slim top tracker ----------------
-function TopTracker({
-  lastStart,
-  cycleDay,
-  onPickDate,
-}: {
-  lastStart: string;
-  cycleDay: number;
-  onPickDate: (iso: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [date, setDate] = useState(lastStart);
-
-  return (
-    <div className="w-full bg-white border border-[#F1F5F9] shadow-sm rounded-xl px-4 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-[#FFE4E7]">
-          Day 1: <strong className="font-medium">{formatISOtoHuman(lastStart)}</strong>
-        </span>
-        <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#FFF7F9] text-[#1F2937] border border-[#F1F5F9]">
-          Cycle day: <strong className="font-medium">{cycleDay}</strong>
-        </span>
-      </div>
-
-      <div className="relative">
-        <button
-          aria-label="Set Day 1 (period start)"
-          onClick={() => setOpen((v) => !v)}
-          className="w-8 h-8 rounded-full border border-[#F1F5F9] bg-white hover:bg-rose-50 text-rose-500 shadow-sm text-xl leading-none"
-          title="Set Day 1"
-        >
-          +
-        </button>
-
-        {open && (
-          <div className="absolute right-0 mt-2 w-64 bg-white border border-[#F1F5F9] rounded-lg shadow-lg p-3 text-sm z-10">
-            <div className="font-medium mb-2">Set Day 1 (period start)</div>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-            />
-            <div className="mt-2 flex gap-2 justify-end">
-              <button onClick={() => setOpen(false)} className="px-3 py-1 border rounded-md hover:bg-gray-50">
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onPickDate(date);
-                  setOpen(false);
-                }}
-                className="px-3 py-1 rounded-md bg-rose-500 text-white hover:bg-rose-600"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ---------------- Legend chip ----------------
 function Legend({ swatch, label, line = false }: { swatch: string; label: string; line?: boolean }) {
   return (
@@ -401,6 +266,74 @@ function Legend({ swatch, label, line = false }: { swatch: string; label: string
     </span>
   );
 }
+
+// ---------------- Log Period Button --------
+function LogPeriodButton({
+  defaultDate,
+  onSave,
+}: {
+  defaultDate: string;
+  onSave: (isoDate: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(defaultDate);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
+                   bg-rose-500 text-white hover:bg-rose-600 transition-colors
+                   shadow-sm"
+      >
+        + Log period
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setOpen(false)}
+          />
+          {/* Dialog */}
+          <div className="relative z-50 w-full max-w-sm bg-white rounded-xl
+                          border border-[#F1F5F9] shadow-lg p-4">
+            <div className="text-base font-semibold mb-2">Log period start (Day 1)</div>
+            <p className="text-sm text-black-600 mb-3">
+              Pick the first day of your most recent period. We’ll recalc your cycle.
+            </p>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md
+                         focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setOpen(false)}
+                className="px-3 py-1.5 rounded-md border hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onSave(date);
+                  setOpen(false);
+                }}
+                className="px-3 py-1.5 rounded-md bg-rose-500 text-white hover:bg-rose-600"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 
 // ---------------- Hormone Graph with bands, fills, tooltips ----------------
 function HormoneGraph({
