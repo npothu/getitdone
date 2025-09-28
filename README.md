@@ -36,7 +36,6 @@
 
 - A polished **phase-aware dashboard** built in a weekend
 - Integrated **Mastra + Gemini API + CedarOS** into one workflow
-- Delivered a **fully client-side demo** — private by design, no backend required
 - Shipped live on a custom domain so anyone can try it instantly
 
 ---
