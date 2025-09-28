@@ -120,7 +120,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* LEFT (1/3) — Hormone chart */}
           <div className="xl:col-span-1 space-y-8">
-            <section className="bg-white rounded-xl p-5 shadow-sm border border-[#F1F5F9]">
+          <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
@@ -157,7 +157,7 @@ export default function Dashboard() {
           {/* RIGHT (2/3) — Wide stack: Tasks → Kanban → Long-term */}
           <aside className="xl:col-span-2 space-y-8">
             {/* Today’s Tasks — WIDE */}
-            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <h2 className="text-2xl font-bold mb-4">Today’s Tasks</h2>
               <div className="space-y-3">
                 {tasks.map((task) => {
@@ -204,7 +204,7 @@ export default function Dashboard() {
             </section>
 
             {/* Kanban — WIDE */}
-            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <div className="flex items-end justify-between gap-3 mb-4">
                 <div>
                   <h2 className="text-2xl font-bold">Plan by Cycle Phase</h2>

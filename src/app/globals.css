@@ -144,3 +144,34 @@ body {
   color: rgba(0,0,0,0.6);
 }
 
+/* globals.css */
+@layer utilities {
+  /* Respect reduced-motion */
+  @media (prefers-reduced-motion: no-preference) {
+    .u-grow-xs { transition: transform 180ms ease, box-shadow 180ms ease; }
+    .u-grow-sm { transition: transform 200ms ease, box-shadow 200ms ease; }
+    .u-grow-md { transition: transform 220ms ease, box-shadow 220ms ease; }
+
+    .u-grow-xs:hover { transform: translateZ(0) scale(1.01); }
+    .u-grow-sm:hover { transform: translateZ(0) scale(1.015); }
+    .u-grow-md:hover { transform: translateZ(0) scale(1.02); }
+
+    /* subtle elevation on hover */
+    .u-lift:hover { box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06); }
+  }
+
+  /* Nice press feedback for clickable things */
+  .u-pressable { transition: transform 50ms ease; }
+  .u-pressable:active { transform: scale(0.985); }
+
+  /* Focus ring for keyboard nav */
+  .u-focus {
+    outline: none;
+    box-shadow: 0 0 0 0 rgba(0,0,0,0);
+  }
+  .u-focus:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.35); /* rose */
+    border-radius: 0.5rem;
+  }
+}
