@@ -20,22 +20,27 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#FFF7F9] text-black`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#FFF7F9] text-black`}
+      >
         {/* Site Header */}
-        <header className="glossy-header sticky top-0 z-50 w-full border-b border-[#EDEFF3]">
-  <div className="max-w-6xl mx-2 px-9 py-7 flex items-center justify-between">
-    <div
-      className="metallic-text inline-block leading-none
-                 text-3xl md:text-4xl lg:text-[44px] font-extrabold tracking-tight
-                 transition-transform duration-200 ease-out origin-left
-                 motion-safe:hover:scale-[1.04]"
-    >
-      getitdone
-    </div>
-    <div />
-  </div>
-</header>
-
+        <header className="glossy-header sticky top-0 z-30 w-full border-b border-[#EDEFF3]">
+          <div className="max-w-[1400px] mx-3 px-3 sm:px-4 md:px-6 py-4 md:py-5 flex items-center justify-between">
+            <div className="flex flex-col">
+              <div
+                className="metallic-text inline-block leading-none
+                           text-3xl md:text-4xl lg:text-[44px] font-extrabold tracking-tight
+                           transition-transform duration-200 ease-out origin-left
+                           motion-safe:hover:scale-[1.04]"
+              >
+                getitdone
+              </div>
+              <div className="mt-1 text-s sm:text-sm md:text-base font-large tracking-wide text-[#000000]/75">
+              your cycle, your strategy
+              </div>
+            </div>
+          </div>
+        </header>
         {children}
       </body>
     </html>

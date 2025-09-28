@@ -126,7 +126,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
                   <Legend swatch="#e11d48" label="Estrogen (E2)" />
                   <Legend swatch="#6366F1" label="Progesterone (P4)" />
-                  <Legend swatch="#22D3EE" label="Today" line />
+                  <Legend swatch="#000000" label="Today" line />
                 </div>
               </div>
 
@@ -308,19 +308,40 @@ function LogPeriodButton({
 }) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(defaultDate);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = () => {
+    if (loading) return;
+    setLoading(true);
+    // Play the loading animation, then save & close.
+    setTimeout(() => {
+      onSave(date);
+      setLoading(false);
+      setOpen(false);
+    }, 1500);
+  };
+
   return (
     <>
+      {/* Trigger */}
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-colors shadow-sm"
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-colors shadow-sm disabled:opacity-60"
         data-text-white
+        disabled={loading}
       >
         + Log period
       </button>
 
+      {/* Dialog */}
       {open && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => !loading && setOpen(false)}
+          />
+          {/* Card */}
           <div className="relative z-50 w-full max-w-sm bg-white rounded-xl border border-[#F1F5F9] shadow-lg p-4">
             <div className="text-base font-semibold mb-2">Log period start (Day 1)</div>
             <p className="text-sm text-black/80 mb-3">
@@ -330,23 +351,49 @@ function LogPeriodButton({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+              disabled={loading}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-transparent disabled:opacity-60"
             />
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setOpen(false)} className="px-3 py-1.5 rounded-md border hover:bg-gray-50">
+              <button
+                onClick={() => setOpen(false)}
+                className="px-3 py-1.5 rounded-md border hover:bg-gray-50 disabled:opacity-60"
+                disabled={loading}
+              >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  onSave(date);
-                  setOpen(false);
-                }}
-                className="px-3 py-1.5 rounded-md bg-rose-500 text-white hover:bg-rose-600"
+                onClick={handleSave}
+                className="px-3 py-1.5 rounded-md bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-60"
                 data-text-white
+                disabled={loading}
               >
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen loading overlay with 3 bouncing dots */}
+      {loading && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+          <div className="flex items-end gap-2">
+            {/* Dot 1 */}
+            <span
+              className="w-4.5 h-4.5 rounded-full bg-rose-500 animate-bounce"
+              style={{ animationDelay: "0ms" }}
+            />
+            {/* Dot 2 */}
+            <span
+              className="w-4.5 h-4.5 rounded-full bg-rose-500 animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            />
+            {/* Dot 3 */}
+            <span
+              className="w-4.5 h-4.5 rounded-full bg-rose-500 animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            />
           </div>
         </div>
       )}
@@ -486,9 +533,9 @@ function HormoneGraph({
         {/* today marker */}
         <line
           x1={x(cycleDay)} y1={16} x2={x(cycleDay)} y2={H - 28}
-          stroke="#22D3EE" strokeDasharray="6,6" strokeWidth={2}
+          stroke="#A020F0" strokeDasharray="6,6" strokeWidth={2}
         />
-        <circle cx={x(cycleDay)} cy={y(estrogen(cycleDay))} r="5.5" fill="#22D3EE" />
+        <circle cx={x(cycleDay)} cy={y(estrogen(cycleDay))} r="5.5" fill="#A020F0" />
 
         {/* x labels */}
         <text x={x(1)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">1</text>
