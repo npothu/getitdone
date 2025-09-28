@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import CedarTaskScheduler from '../components/CedarTaskScheduler'
 import CedarTaskDisplay from '../components/CedarTaskDisplay'
 import { useCedarTasks } from '../hooks/useCedarTasks'
+import UpcomingCedarTasks from '../components/UpcomingCedarTasks'
 
 import {
   getCurrentCycleInfo,
@@ -26,6 +27,9 @@ type LogEntry = {
 // ---------------- Page ----------------
 export default function Dashboard() {
   const { cedarTasks, addCedarTask, toggleCedarTask } = useCedarTasks()
+
+  // Refresh trigger for Cedar tasks
+  const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0)
 
   // Minimal cycle state (defaults)
   const [lastStart, setLastStart] = useState<string>(
@@ -66,6 +70,19 @@ export default function Dashboard() {
       console.log(`Tip: "${newTask}" would be optimal during ${phaseInfo.name} phase`);
     }
   };
+
+  // Cedar task handlers
+  const handleTaskScheduled = (task: any) => {
+    console.log('Task scheduled:', task)
+    addCedarTask(task)
+    // Trigger refresh of all Cedar task components
+    setTaskRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleTasksRefresh = () => {
+    // This function can be called to refresh all task lists
+    setTaskRefreshTrigger(prev => prev + 1)
+  }
 
   // ---------------- Logs (optional quick log; UI sits under Tasks) ----------------
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -117,11 +134,11 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* RIGHT: Today’s Focus (top) + Tasks (bottom) */}
+          {/* RIGHT: Today's Focus (top) + Tasks (bottom) */}
           <div className="space-y-6">
             {/* Today's Focus */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-              <h2 className="text-xl font-semibold text-[#1F2937] mb-4">Today’s Focus</h2>
+              <h2 className="text-xl font-semibold text-[#1F2937] mb-4">Today's Focus</h2>
               <div className="bg-[#FFF1F2] border border-[#FFE4E7] rounded-lg p-4 mb-4">
                 <div className="font-medium" style={{ color: currentCycle.phaseColor }}>
                   Day {currentCycle.cycleDay} — {currentCycle.phaseName}
@@ -150,13 +167,10 @@ export default function Dashboard() {
             {/* Cedar Task Scheduler */}
             <CedarTaskScheduler
               currentCycle={currentCycle}
-              onTaskScheduled={addCedarTask}
+              onTaskScheduled={handleTaskScheduled}
+              onTasksRefresh={handleTasksRefresh}
             />
-
-            {/* Cedar Task Display */}
-            <CedarTaskDisplay
-              currentCycle={currentCycle}
-            />
+            <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
 
             {/* Tasks */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">

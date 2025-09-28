@@ -1,12 +1,10 @@
-// src/lib/mastra-config.ts
 import { Mastra } from '@mastra/core';
 import { google } from "@ai-sdk/google";
 import { Agent } from "@mastra/core/agent";
 
-// Define the Cycle Scheduler Agent
-// Note: We are using the Agent class, which is how Mastra is designed to work.
+// Cycle Scheduler Agent
 export const cycleSchedulerAgent = new Agent({
-  name: "cycle-scheduler", // Unique identifier for the agent
+  name: "cycle-scheduler",
   
   // The model configuration using the @ai-sdk/google provider
   model: google("gemini-2.5-flash"),
@@ -79,28 +77,10 @@ RESPONSE METHODOLOGY:
 
 The user's input data and analysis instructions will follow this prompt. Generate your recommendation now based on the input you receive.
 `,
-    // You can add more Mastra features here like memory or tools if needed later
-    // memory: new Memory(...),
-    // tools: { ... },
 });
 
-// The main Mastra configuration MUST be exported for the CLI to recognize your agents.
 export const mastra = new Mastra({
   agents: {
-    // Register the agent here. It will be accessible via its name 'cycle-scheduler'.
     'cycle-scheduler': cycleSchedulerAgent,
   },
-  // Optionally, you can configure logging, storage, etc., globally here
-  // logger: new ConsoleLogger(),
 });
-
-
-// -----------------------------------------------------------------------------
-// IMPORTANT: The rest of the original code for 'GeminiCycleSchedulerAgent' 
-// class should be removed from this file. 
-//
-// The logic for 'generateRecommendation', 'buildEnhancedPrompt', etc., 
-// should be implemented in the file where you call the agent (e.g., an API route), 
-// using the Mastra Client SDK methods like `mastra.getAgent('cycle-scheduler').generate(...)`
-// or the original logic can be refactored into a Mastra Workflow.
-// -----------------------------------------------------------------------------

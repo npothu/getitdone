@@ -20,7 +20,7 @@ const initializeCedar = async () => {
 }
 
 interface TaskConstraints {
-  title: string
+  description: string
   dueDate?: Date
   availableDays: string[]
   taskType: 'creative' | 'presentation' | 'detail' | 'planning' | 'social' | 'general'
@@ -44,6 +44,7 @@ interface SchedulingSuggestion {
     reason: string
   }>
   optimizationTips?: string[]
+  shortSummary?: string // Add the new field
 }
 
 class MastraGeminiScheduler {
@@ -54,7 +55,7 @@ class MastraGeminiScheduler {
   ): Promise<SchedulingSuggestion> {
     
     const agentInput = {
-      taskTitle: constraints.title,
+      taskDescription: constraints.description,
       taskType: constraints.taskType,
       energyRequired: constraints.energyRequired,
       focusRequired: constraints.focusRequired,
@@ -115,7 +116,7 @@ class MastraGeminiScheduler {
     }
   }
 
-  private buildEnhancedPrompt(input: any): string {
+  buildEnhancedPrompt = (input: any): string => {
     const today = new Date()
     const currentDateStr = today.toISOString().split('T')[0]
     
@@ -127,8 +128,8 @@ Current Phase: ${input.currentPhase}
 Cycle Length: ${input.cycleLength} days
 
 TASK DETAILS:
-- Title: "${input.taskTitle}"
-- Type: ${input.taskType}
+- Description: "${input.taskDescription}"
+- Detected Type: ${input.taskType}
 - Energy Required: ${input.energyRequired}
 - Focus Required: ${input.focusRequired}
 - Due Date: ${input.dueDate || 'No specific deadline'}
@@ -223,7 +224,8 @@ Respond with ONLY the JSON object, no other text.
       optimizationTips: aiResponse.optimizationTips || [
         'Consider your natural energy patterns during this cycle phase',
         aiResponse.hormonalInsight || 'Align tasks with your hormonal rhythms for optimal performance'
-      ]
+      ],
+      shortSummary: aiResponse.shortSummary || 'Optimized for your cycle phase'
     }
   }
 
@@ -269,12 +271,13 @@ Respond with ONLY the JSON object, no other text.
 interface CedarTaskSchedulerProps {
   currentCycle: any
   onTaskScheduled: (task: any) => void
+  onTasksRefresh?: () => void // Made optional with ?
 }
 
-export default function CedarTaskScheduler({ currentCycle, onTaskScheduled }: CedarTaskSchedulerProps) {
+export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTasksRefresh }: CedarTaskSchedulerProps) {
   const [showForm, setShowForm] = useState(false)
   const [constraints, setConstraints] = useState<TaskConstraints>({
-    title: '',
+    description: '',
     taskType: 'general',
     energyRequired: 'medium',
     focusRequired: 'medium',
@@ -285,25 +288,59 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled }: Ce
   const [loading, setLoading] = useState(false)
   const [scheduler] = useState(new MastraGeminiScheduler())
 
-  const taskTypes = [
-    { value: 'creative', label: 'Creative Work', description: 'Brainstorming, design, writing' },
-    { value: 'presentation', label: 'Presentation', description: 'Demos, meetings, public speaking' },
-    { value: 'detail', label: 'Detail Work', description: 'Editing, reviewing, organizing' },
-    { value: 'planning', label: 'Planning', description: 'Strategy, goal setting, analysis' },
-    { value: 'social', label: 'Social', description: 'Networking, team meetings, calls' },
-    { value: 'general', label: 'General', description: 'Standard work tasks' }
-  ]
+  const analyzeTaskType = (description: string): 'creative' | 'presentation' | 'detail' | 'planning' | 'social' | 'general' => {
+    const lowerDesc = description.toLowerCase()
+    
+    if (lowerDesc.includes('brainstorm') || lowerDesc.includes('design') || lowerDesc.includes('write') || 
+        lowerDesc.includes('creative') || lowerDesc.includes('art') || lowerDesc.includes('idea')) {
+      return 'creative'
+    } else if (lowerDesc.includes('present') || lowerDesc.includes('demo') || lowerDesc.includes('meeting') || 
+               lowerDesc.includes('speak') || lowerDesc.includes('pitch')) {
+      return 'presentation'
+    } else if (lowerDesc.includes('review') || lowerDesc.includes('edit') || lowerDesc.includes('organize') || 
+               lowerDesc.includes('detail') || lowerDesc.includes('check') || lowerDesc.includes('proofread')) {
+      return 'detail'
+    } else if (lowerDesc.includes('plan') || lowerDesc.includes('strategy') || lowerDesc.includes('goal') || 
+               lowerDesc.includes('analyze') || lowerDesc.includes('research')) {
+      return 'planning'
+    } else if (lowerDesc.includes('network') || lowerDesc.includes('team') || lowerDesc.includes('social') || 
+               lowerDesc.includes('call') || lowerDesc.includes('collaborate')) {
+      return 'social'
+    }
+    return 'general'
+  }
+
+  const extractTaskTitle = (description: string): string => {
+    // Extract a concise title from the description (first few words or key action)
+    const words = description.trim().split(' ')
+    if (words.length <= 4) return description
+    
+    // Look for action verbs and create a title
+    const actionWords = ['review', 'write', 'plan', 'design', 'create', 'analyze', 'organize', 'present']
+    const actionWord = words.find(word => actionWords.some(action => word.toLowerCase().includes(action)))
+    
+    if (actionWord) {
+      const actionIndex = words.findIndex(word => word.toLowerCase().includes(actionWord.toLowerCase()))
+      return words.slice(actionIndex, Math.min(actionIndex + 4, words.length)).join(' ')
+    }
+    
+    return words.slice(0, 4).join(' ') + (words.length > 4 ? '...' : '')
+  }
 
   const daysOfWeek = [
     'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
   ]
 
   const handleGenerateSuggestion = async () => {
-    if (!constraints.title.trim()) return
+    if (!constraints.description.trim()) return
+
+    // Auto-analyze task type from description
+    const detectedTaskType = analyzeTaskType(constraints.description)
+    const updatedConstraints = { ...constraints, taskType: detectedTaskType }
 
     setLoading(true)
     try {
-      const result = await scheduler.evaluateTaskScheduling(constraints, currentCycle)
+      const result = await scheduler.evaluateTaskScheduling(updatedConstraints, currentCycle)
       setSuggestion(result)
     } catch (error) {
       console.error('Scheduling error:', error)
@@ -312,36 +349,89 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled }: Ce
     setLoading(false)
   }
 
-  const handleAcceptSuggestion = () => {
+  const handleAcceptSuggestion = async () => {
     if (!suggestion) return
 
-    const newTask = {
-      id: Date.now(),
-      text: constraints.title,
-      completed: false,
-      scheduledDate: suggestion.suggestedDate,
-      cycleDay: suggestion.cycleDay,
+    const taskTitle = extractTaskTitle(constraints.description)
+    const detectedTaskType = analyzeTaskType(constraints.description)
+
+    const taskData = {
+      title: taskTitle,
+      task_type: detectedTaskType,
+      energy_required: constraints.energyRequired,
+      focus_required: constraints.focusRequired,
+      scheduled_date: suggestion.suggestedDate.toISOString().split('T')[0],
+      cycle_day: suggestion.cycleDay,
       phase: suggestion.phase,
       confidence: suggestion.confidence,
       reasoning: suggestion.reasoning,
-      constraints,
-      source: 'cedar-scheduled' as const
+      optimization_tips: suggestion.optimizationTips || [],
+      alternatives: suggestion.alternatives,
+      constraints: { ...constraints, description: constraints.description },
+      short_summary: suggestion.shortSummary || 'Optimized for your cycle phase'
     }
 
-    console.log('Adding Cedar task:', newTask) // Debug log
-    onTaskScheduled(newTask)
+    try {
+      // Save to database
+      const response = await fetch('/api/save-cedar-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+      })
 
-    // Reset form
-    setConstraints({
-      title: '',
-      taskType: 'general',
-      energyRequired: 'medium',
-      focusRequired: 'medium',
-      availableDays: [],
-      flexibilityDays: 7
-    })
-    setSuggestion(null)
-    setShowForm(false)
+      if (!response.ok) {
+        throw new Error('Failed to save task')
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Call the parent callback for immediate UI update
+        const newTask = {
+          id: result.task.id,
+          text: taskTitle,
+          completed: false,
+          scheduledDate: suggestion.suggestedDate,
+          cycleDay: suggestion.cycleDay,
+          phase: suggestion.phase,
+          confidence: suggestion.confidence,
+          reasoning: suggestion.reasoning,
+          constraints,
+          source: 'cedar-scheduled' as const
+        }
+
+        onTaskScheduled(newTask)
+
+        // Trigger refresh of all task lists (upcoming tasks, all tasks, etc.)
+        if (onTasksRefresh) {
+          onTasksRefresh()
+        }
+
+        // Force refresh the upcoming tasks by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('cedarTaskAdded', { 
+          detail: { task: newTask } 
+        }))
+
+        // Reset form
+        setConstraints({
+          description: '',
+          taskType: 'general',
+          energyRequired: 'medium',
+          focusRequired: 'medium',
+          availableDays: [],
+          flexibilityDays: 7
+        })
+        setSuggestion(null)
+        setShowForm(false)
+
+        alert('Task scheduled successfully!')
+      } else {
+        throw new Error(result.error || 'Failed to save task')
+      }
+    } catch (error) {
+      console.error('Error saving task:', error)
+      alert('Error saving task: ' + (error as Error).message)
+    }
   }
 
   const formatDate = (date: Date) => {
@@ -391,33 +481,16 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled }: Ce
       {showForm && (
         <div className="space-y-4 border-t pt-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title</label>
-            <input
-              type="text"
-              value={constraints.title}
-              onChange={(e) => setConstraints(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Enter your task..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+            <label className="block text-sm font-medium text-gray-700 mb-1">Task Description</label>
+            <textarea
+              value={constraints.description}
+              onChange={(e) => setConstraints(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Describe what you need to do... (e.g., 'Review quarterly metrics and prepare presentation for board meeting')"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent resize-none"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Task Type</label>
-            <div className="grid grid-cols-2 gap-2">
-              {taskTypes.map(type => (
-                <button
-                  key={type.value}
-                  onClick={() => setConstraints(prev => ({ ...prev, taskType: type.value as any }))}
-                  className={`p-3 text-left rounded-lg border transition-colors ${
-                    constraints.taskType === type.value
-                      ? 'border-rose-400 bg-rose-50 text-rose-800'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-medium text-sm">{type.label}</div>
-                  <div className="text-xs text-gray-500">{type.description}</div>
-                </button>
-              ))}
+            <div className="text-xs text-gray-500 mt-1">
+              AI will automatically detect task type and optimize scheduling based on your description
             </div>
           </div>
 
@@ -501,7 +574,7 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled }: Ce
 
           <button
             onClick={handleGenerateSuggestion}
-            disabled={!constraints.title.trim() || loading}
+            disabled={!constraints.description.trim() || loading}
             className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {loading ? 'AI Analyzing with Gemini...' : 'Generate Gemini AI Recommendation'}
