@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import CedarTaskScheduler from '../components/CedarTaskScheduler'
+import CedarTaskDisplay from '../components/CedarTaskDisplay'
+import { useCedarTasks } from '../hooks/useCedarTasks'
+import UpcomingCedarTasks from '../components/UpcomingCedarTasks'
+
 import {
   getCurrentCycleInfo,
   getTaskOptimalPhase,
@@ -32,7 +37,12 @@ const PHASE_UI: Record<ColKey, { base: string; light: string; chipBg: string; ch
    Page
    ========================= */
 export default function Dashboard() {
-  // --- Cycle state ---
+  const { cedarTasks, addCedarTask, toggleCedarTask } = useCedarTasks()
+
+  // Refresh trigger for Cedar tasks
+  const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0)
+
+  // Minimal cycle state (defaults)
   const [lastStart, setLastStart] = useState<string>(
     new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
   );
@@ -109,12 +119,20 @@ export default function Dashboard() {
     }
   };
 
-  /* ============ Layout ============ 
-     XL and up:
-       LEFT  (span 1): Hormone Graph
-       RIGHT (span 2): Today’s Tasks (wide) → Kanban (wide) → Long-term tasks (wide)
-  */
-  return (
+  // Cedar task handlers
+  const handleTaskScheduled = (task: any) => {
+    console.log('Task scheduled:', task)
+    addCedarTask(task)
+    // Trigger refresh of all Cedar task components
+    setTaskRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleTasksRefresh = () => {
+    // This function can be called to refresh all task lists
+    setTaskRefreshTrigger(prev => prev + 1)
+  }
+
+ return (
     <div className="min-h-screen bg-[#FFF7F9]">
       <div className="w-full px-6 py-6 force-text-black">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -589,4 +607,11 @@ function areaFrom<T>(arr: T[], map: (t: T, i: number) => { x: number; y: number 
   const end = `L ${pts[pts.length - 1].x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
   return `${start} ${lines} ${end}`;
 }
-function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function formatISOtoHuman(iso: string) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
