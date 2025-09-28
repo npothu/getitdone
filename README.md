@@ -25,7 +25,6 @@
 - Created a **cycle wheel visualization** and **Today’s Focus** panel with React components
 - Integrated **Gemini API** to parse task descriptions and recommend the optimal phase
 - Used **Mastra** to power agent-based logic (phase-aware nudges like _✨ Great fit today_)
-- Applied **CedarOS** to enforce policies and keep AI suggestions safe & scoped
 - Deployed the demo via **Cloudflare** with a custom **GoDaddy domain**
 
 ---
