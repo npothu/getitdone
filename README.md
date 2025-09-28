@@ -1,5 +1,5 @@
 # getitdone – Cycle-Aware Productivity Dashboard
-**getitdone uses artificial intelligence to align tasks with menstrual phases, turning biology into a predictive productivity framework.**
+**Using artificial intelligence to align tasks with menstrual phases, turning the menstrual cycle into a predictive productivity framework.**
 <img width="1872" height="883" alt="cycle" src="https://github.com/user-attachments/assets/fdc206d6-acb9-4407-a1b0-6cb67760e9c1" />
 
 
