@@ -164,7 +164,9 @@ const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTask
           {/* RIGHT (2/3) — Wide stack: Tasks → Kanban → Long-term */}
           <aside className="xl:col-span-2 space-y-8">
             {/* Display upcoming Cedar tasks */}
-            <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
+  <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
+</div>
 
             {/* Kanban — WIDE */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
@@ -496,7 +498,8 @@ function HormoneGraph({
     { start: 1, end: menstrualEnd, fill: "rgba(244,63,94,0.06)", label: "Menstrual" },
     { start: follicularStart, end: follicularEnd, fill: "rgba(20,184,166,0.06)", label: "Follicular" },
     { start: ovulatoryStart, end: ovulatoryEnd, fill: "rgba(249,115,22,0.10)", label: "Ovulatory" },
-    { start: lutealStart, end: lutealEnd, fill: "rgba(167,139,250,0.06)", label: "Luteal" },
+    { start: lutealStart, end: lutealStart + 6, fill: "rgba(167,139,250,0.06)", label: "Early Luteal" },
+    { start: lutealStart + 6, end: lutealEnd, fill: "rgba(255, 151, 205, 0.2)", label: "Late Luteal" },
   ].filter((b) => b.end >= b.start);
 
   function onMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
@@ -536,7 +539,7 @@ function HormoneGraph({
           return (
             <g key={i}>
               <rect x={x1} y={16} width={Math.max(0, x2 - x1)} height={H - 44} fill={b.fill} rx={3} />
-              <text x={x1 + 6} y={28} fontSize="10" fill="#6B7280">
+              <text x={x1 + 6} y={28} fontSize="12" fontWeight="bold" fill="#6B7280">
                 {b.label}
               </text>
             </g>

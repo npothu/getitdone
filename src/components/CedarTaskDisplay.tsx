@@ -92,7 +92,7 @@ export default function CedarTaskDisplay({ currentCycle }: CedarTaskDisplayProps
       )}
 
       <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-        <h3 className="font-semibold text-gray-900 mb-4">Upcoming Cedar-Scheduled Tasks</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Upcoming Scheduled Tasks</h3>
         
         {upcomingTasks.length === 0 ? (
           <div className="text-center py-4 text-gray-500">

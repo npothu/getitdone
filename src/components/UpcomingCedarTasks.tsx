@@ -201,8 +201,8 @@ export default function UpcomingCedarTasks({ refreshTrigger }: UpcomingCedarTask
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Cedar-scheduled Tasks</h3>
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Tasks</h3>
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -214,7 +214,7 @@ export default function UpcomingCedarTasks({ refreshTrigger }: UpcomingCedarTask
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Upcoming Cedar-scheduled Tasks
+        Upcoming Tasks
       </h3>
 
       {tasks.length === 0 ? (
