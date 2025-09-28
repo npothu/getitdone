@@ -44,7 +44,7 @@ interface SchedulingSuggestion {
     reason: string
   }>
   optimizationTips?: string[]
-  shortSummary?: string // Add the new field
+  shortSummary?: string
 }
 
 class MastraGeminiScheduler {
@@ -76,11 +76,9 @@ class MastraGeminiScheduler {
   }
 
   async generateRecommendation(input: any): Promise<SchedulingSuggestion> {
-    // Build the enhanced prompt with user data
     const enhancedPrompt = this.buildEnhancedPrompt(input)
 
     try {
-      // Call our API route instead of importing Mastra directly
       const response = await fetch('/api/schedule-task', {
         method: 'POST',
         headers: { 
@@ -102,12 +100,9 @@ class MastraGeminiScheduler {
 
       console.log('API result structure:', data.result)
 
-      // Parse the JSON response from the agent
-      // The result might have different properties with generateVNext
       const responseText = data.result.text || data.result.content || data.result
       const aiResponse = this.parseAIResponse(responseText)
       
-      // Convert to our SchedulingSuggestion format
       return this.convertToSchedulingSuggestion(aiResponse, input)
       
     } catch (error) {
@@ -116,7 +111,7 @@ class MastraGeminiScheduler {
     }
   }
 
-  buildEnhancedPrompt = (input: any): string => {
+  private buildEnhancedPrompt(input: any): string {
     const today = new Date()
     const currentDateStr = today.toISOString().split('T')[0]
     
@@ -154,7 +149,8 @@ CRITICAL: You MUST respond with ONLY valid JSON in exactly this format:
     { "date": "YYYY-MM-DD", "cycleDay": 16, "phase": "ovulatory", "confidence": 0.75, "reason": "Alternative reason" }
   ],
   "optimizationTips": ["Tip 1", "Tip 2"],
-  "hormonalInsight": "Brief hormonal explanation"
+  "hormonalInsight": "Brief hormonal explanation",
+  "shortSummary": "One concise sentence under 50 characters for UI display"
 }
 
 Respond with ONLY the JSON object, no other text.
@@ -163,18 +159,14 @@ Respond with ONLY the JSON object, no other text.
 
   private parseAIResponse(responseText: string): any {
     try {
-      // Log the raw response to debug
       console.log('Raw AI response:', responseText)
       
-      // If response contains HTML, it's likely an error page
       if (responseText.includes('<!DOCTYPE') || responseText.includes('<html>')) {
         throw new Error('AI returned HTML instead of JSON - possible server error')
       }
       
-      // Clean the response to extract just the JSON
       const jsonMatch = responseText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
-        // If no JSON found, try to extract from code blocks
         const codeBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)
         if (codeBlockMatch) {
           const cleanedResponse = codeBlockMatch[1]
@@ -193,15 +185,12 @@ Respond with ONLY the JSON object, no other text.
   }
 
   private convertToSchedulingSuggestion(aiResponse: any, input: any): SchedulingSuggestion {
-    // Validate required fields
     if (!aiResponse.suggestedDate || !aiResponse.cycleDay || !aiResponse.phase) {
       throw new Error('AI response missing required fields')
     }
 
-    // Convert dates from strings to Date objects
     const suggestedDate = new Date(aiResponse.suggestedDate)
     
-    // Convert alternatives
     const alternatives = (aiResponse.alternatives || []).map((alt: any) => ({
       date: new Date(alt.date),
       cycleDay: alt.cycleDay,
@@ -210,7 +199,6 @@ Respond with ONLY the JSON object, no other text.
       reason: alt.reason || 'Alternative timing option'
     }))
 
-    // Build the final suggestion object
     return {
       suggestedDate,
       cycleDay: aiResponse.cycleDay,
@@ -237,7 +225,6 @@ Respond with ONLY the JSON object, no other text.
     const today = new Date()
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
     
-    // Enhanced phase-based scoring
     let confidence = 0.6
     const reasoning = ['Fallback recommendation - using enhanced cycle heuristics']
     
@@ -271,7 +258,7 @@ Respond with ONLY the JSON object, no other text.
 interface CedarTaskSchedulerProps {
   currentCycle: any
   onTaskScheduled: (task: any) => void
-  onTasksRefresh?: () => void // Made optional with ?
+  onTasksRefresh?: () => void
 }
 
 export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTasksRefresh }: CedarTaskSchedulerProps) {
@@ -287,6 +274,10 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
   const [suggestion, setSuggestion] = useState<SchedulingSuggestion | null>(null)
   const [loading, setLoading] = useState(false)
   const [scheduler] = useState(new MastraGeminiScheduler())
+
+  const daysOfWeek = [
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+  ]
 
   const analyzeTaskType = (description: string): 'creative' | 'presentation' | 'detail' | 'planning' | 'social' | 'general' => {
     const lowerDesc = description.toLowerCase()
@@ -311,11 +302,9 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
   }
 
   const extractTaskTitle = (description: string): string => {
-    // Extract a concise title from the description (first few words or key action)
     const words = description.trim().split(' ')
     if (words.length <= 4) return description
     
-    // Look for action verbs and create a title
     const actionWords = ['review', 'write', 'plan', 'design', 'create', 'analyze', 'organize', 'present']
     const actionWord = words.find(word => actionWords.some(action => word.toLowerCase().includes(action)))
     
@@ -327,14 +316,9 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
     return words.slice(0, 4).join(' ') + (words.length > 4 ? '...' : '')
   }
 
-  const daysOfWeek = [
-    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
-  ]
-
   const handleGenerateSuggestion = async () => {
     if (!constraints.description.trim()) return
 
-    // Auto-analyze task type from description
     const detectedTaskType = analyzeTaskType(constraints.description)
     const updatedConstraints = { ...constraints, taskType: detectedTaskType }
 
@@ -372,7 +356,6 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
     }
 
     try {
-      // Save to database
       const response = await fetch('/api/save-cedar-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -386,7 +369,6 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
       const result = await response.json()
       
       if (result.success) {
-        // Call the parent callback for immediate UI update
         const newTask = {
           id: result.task.id,
           text: taskTitle,
@@ -402,17 +384,14 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
 
         onTaskScheduled(newTask)
 
-        // Trigger refresh of all task lists (upcoming tasks, all tasks, etc.)
         if (onTasksRefresh) {
           onTasksRefresh()
         }
 
-        // Force refresh the upcoming tasks by dispatching a custom event
         window.dispatchEvent(new CustomEvent('cedarTaskAdded', { 
           detail: { task: newTask } 
         }))
 
-        // Reset form
         setConstraints({
           description: '',
           taskType: 'general',
@@ -430,6 +409,87 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
       }
     } catch (error) {
       console.error('Error saving task:', error)
+      alert('Error saving task: ' + (error as Error).message)
+    }
+  }
+
+  const handleAcceptAlternative = async () => {
+    if (!suggestion || !suggestion.alternatives || suggestion.alternatives.length === 0) return
+
+    const alternative = suggestion.alternatives[0]
+    const taskTitle = extractTaskTitle(constraints.description)
+    const detectedTaskType = analyzeTaskType(constraints.description)
+
+    const taskData = {
+      title: taskTitle,
+      task_type: detectedTaskType,
+      energy_required: constraints.energyRequired,
+      focus_required: constraints.focusRequired,
+      scheduled_date: alternative.date.toISOString().split('T')[0],
+      cycle_day: alternative.cycleDay,
+      phase: alternative.phase,
+      confidence: alternative.confidence,
+      reasoning: [alternative.reason || 'Alternative timing recommendation'],
+      optimization_tips: suggestion.optimizationTips || [],
+      alternatives: suggestion.alternatives.slice(1),
+      constraints: { ...constraints, description: constraints.description },
+      short_summary: `Alternative: ${alternative.reason || 'Optimized for cycle phase'}`
+    }
+
+    try {
+      const response = await fetch('/api/save-cedar-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save task')
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        const newTask = {
+          id: result.task.id,
+          text: taskTitle,
+          completed: false,
+          scheduledDate: alternative.date,
+          cycleDay: alternative.cycleDay,
+          phase: alternative.phase,
+          confidence: alternative.confidence,
+          reasoning: [alternative.reason || 'Alternative timing recommendation'],
+          constraints,
+          source: 'cedar-scheduled' as const
+        }
+
+        onTaskScheduled(newTask)
+
+        if (onTasksRefresh) {
+          onTasksRefresh()
+        }
+
+        window.dispatchEvent(new CustomEvent('cedarTaskAdded', { 
+          detail: { task: newTask } 
+        }))
+
+        setConstraints({
+          description: '',
+          taskType: 'general',
+          energyRequired: 'medium',
+          focusRequired: 'medium',
+          availableDays: [],
+          flexibilityDays: 7
+        })
+        setSuggestion(null)
+        setShowForm(false)
+
+        alert('Task scheduled with alternative date!')
+      } else {
+        throw new Error(result.error || 'Failed to save task')
+      }
+    } catch (error) {
+      console.error('Error saving alternative task:', error)
       alert('Error saving task: ' + (error as Error).message)
     }
   }
@@ -602,12 +662,22 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
                   </span>
                 </div>
               </div>
-              <button
-                onClick={handleAcceptSuggestion}
-                className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm"
-              >
-                Accept & Schedule
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleAcceptSuggestion}
+                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm"
+                >
+                  Accept & Schedule
+                </button>
+                {suggestion.alternatives && suggestion.alternatives.length > 0 && (
+                  <button
+                    onClick={handleAcceptAlternative}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    Use Next Alternative
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="text-sm text-gray-700">
@@ -624,9 +694,14 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
                 <div className="font-medium text-gray-700 text-sm mb-2">Alternative Options:</div>
                 <div className="space-y-1">
                   {suggestion.alternatives.map((alt, index) => (
-                    <div key={index} className="text-xs text-gray-600 flex justify-between">
-                      <span>{formatDate(alt.date)} (Day {alt.cycleDay})</span>
+                    <div key={index} className={`text-xs flex justify-between p-2 rounded ${
+                      index === 0 ? 'bg-blue-50 border border-blue-200' : 'text-gray-600'
+                    }`}>
+                      <span>{formatDate(alt.date)} (Day {alt.cycleDay}, {alt.phase})</span>
                       <span>{Math.round(alt.confidence * 100)}% fit</span>
+                      {index === 0 && (
+                        <span className="text-blue-600 font-medium">← Next option</span>
+                      )}
                     </div>
                   ))}
                 </div>

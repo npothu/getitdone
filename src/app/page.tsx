@@ -1,22 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import CedarTaskScheduler from '../components/CedarTaskScheduler'
-import CedarTaskDisplay from '../components/CedarTaskDisplay'
 import { useCedarTasks } from '../hooks/useCedarTasks'
 import UpcomingCedarTasks from '../components/UpcomingCedarTasks'
 
 import {
   getCurrentCycleInfo,
-  getTaskOptimalPhase,
-  getOptimalPhaseInfo,
-  isOptimalTiming,
 } from "../lib/utils";
 
 /* =========================
    Types
    ========================= */
-type Task = { id: number; text: string; completed: boolean };
 type ColKey = "Menstrual" | "Follicular" | "Ovulatory" | "Early Luteal" | "Late Luteal";
 
 /* Phase UI palette for Kanban */
@@ -37,7 +32,8 @@ const PHASE_UI: Record<ColKey, { base: string; light: string; chipBg: string; ch
    Page
    ========================= */
 export default function Dashboard() {
-  const { cedarTasks, addCedarTask, toggleCedarTask } = useCedarTasks()
+  
+const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTasks()
 
   // Refresh trigger for Cedar tasks
   const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0)
@@ -45,6 +41,11 @@ export default function Dashboard() {
   // Popup state for Cedar scheduler
   const [showSchedulerPopup, setShowSchedulerPopup] = useState(false)
 
+// Refresh tasks from database when component mounts or refresh trigger changes
+  useEffect(() => {
+    refreshTasks()
+  }, [taskRefreshTrigger])
+  
   // Minimal cycle state (defaults)
   const [lastStart, setLastStart] = useState<string>(
     new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -57,18 +58,8 @@ export default function Dashboard() {
     [lastPeriodDate, cycleLen]
   );
   const effectiveLen = Math.max(cycleLen, currentCycle.cycleDay);
-
-  // --- Tasks ---
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, text: "Task A (label)", completed: false },
-    { id: 2, text: "Task B (label)", completed: false },
-    { id: 3, text: "Complete 3rd quarterly report", completed: false },
-    { id: 4, text: "Prepare presentation slides", completed: false },
-  ]);
-  const toggleTask = (id: number) =>
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
-
-  /* ---- Kanban grouping ---- */
+  
+  /* ---- Kanban grouping for Cedar tasks ---- */
   const columns: { key: ColKey; desc: string }[] = [
     { key: "Menstrual", desc: "Gentle planning, reflection" },
     { key: "Follicular", desc: "Ideas, learning, building momentum" },
@@ -77,35 +68,43 @@ export default function Dashboard() {
     { key: "Late Luteal", desc: "Tidy up, admin, buffers" },
   ];
 
-  function normalizePhase(raw: string | undefined | null): ColKey | "Luteal" {
-    if (!raw) return "Menstrual";
-    const s = String(raw).trim().toLowerCase();
+  function mapPhaseToColumn(phase: string): ColKey {
+    const s = String(phase).trim().toLowerCase();
+    
     if (["menstrual", "menses", "period", "bleeding"].includes(s)) return "Menstrual";
     if (["follicular", "pre-ovulatory", "preovulatory"].includes(s)) return "Follicular";
     if (["ovulatory", "ovulation", "mid-cycle", "midcycle"].includes(s)) return "Ovulatory";
-    if (["luteal", "post-ovulatory", "postovulatory"].includes(s)) return "Luteal";
-    return "Menstrual";
-  }
-  function bucketForTask(text: string): ColKey {
-    const phase = normalizePhase(getTaskOptimalPhase(text));
-    if (phase === "Luteal") {
-      const t = text.toLowerCase();
-      if (/(finish|review|admin|invoice|cleanup|polish|wrap|tidy|proof|bug|reconcile|file)/.test(t)) {
-        return "Late Luteal";
-      }
+    if (["luteal", "post-ovulatory", "postovulatory"].includes(s)) {
+      // Could add logic here to differentiate Early vs Late Luteal based on cycle day
+      // For now, default to Early Luteal
       return "Early Luteal";
     }
-    return phase as ColKey;
+    
+    // Default fallback
+    return "Menstrual";
   }
 
-  const initCols: Record<ColKey, Task[]> = {
+  // Group Cedar tasks by phase for Kanban display
+  const initCols: Record<ColKey, any[]> = {
     Menstrual: [], Follicular: [], Ovulatory: [], "Early Luteal": [], "Late Luteal": [],
   };
-  const tasksByCol = tasks.reduce<Record<ColKey, Task[]>>((acc, t) => {
-    const key = bucketForTask(t.text);
-    (acc[key] ??= []).push(t);
-    return acc;
-  }, { ...initCols });
+  
+  const cedarTasksByCol = cedarTasks
+    .filter(task => !task.completed)
+    .reduce<Record<ColKey, any[]>>((acc, task) => {
+      const key = mapPhaseToColumn(task.phase);
+      (acc[key] ??= []).push(task);
+      return acc;
+    }, { ...initCols });
+
+  // Sort tasks within each column by scheduled date
+  Object.keys(cedarTasksByCol).forEach(colKey => {
+    cedarTasksByCol[colKey as ColKey].sort((a, b) => {
+      const dateA = new Date(a.scheduledDate);
+      const dateB = new Date(b.scheduledDate);
+      return dateA.getTime() - dateB.getTime();
+    });
+  });
 
   // Cedar task handlers
   const handleTaskScheduled = (task: any) => {
@@ -176,6 +175,12 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setTaskRefreshTrigger(prev => prev + 1)}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                  >
+                    🔄 Refresh
+                  </button>
+                  <button
                     onClick={() => setShowSchedulerPopup(true)}
                     className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
                     data-text-white
@@ -189,6 +194,8 @@ export default function Dashboard() {
               <div className="grid grid-flow-col auto-cols-[minmax(220px,1fr)] gap-4 overflow-x-auto pb-2">
                 {columns.map((col) => {
                   const ui = PHASE_UI[col.key];
+                  const columnTasks = cedarTasksByCol[col.key] || [];
+                  
                   return (
                     <div
                       key={col.key}
@@ -206,26 +213,54 @@ export default function Dashboard() {
                           {col.key}
                         </div>
                         <div className="text-xs text-black/70">{col.desc}</div>
+                        <div className="text-xs text-black/50 mt-1">
+                          {columnTasks.length} task{columnTasks.length !== 1 ? 's' : ''}
+                        </div>
                       </div>
 
                       <div className="p-3 space-y-2">
-                        {tasksByCol[col.key].length === 0 && (
-                          <div className="text-xs text-black/50 italic">No tasks here yet</div>
+                        {columnTasks.length === 0 && (
+                          <div className="text-xs text-black/50 italic">No tasks scheduled yet</div>
                         )}
-                        {tasksByCol[col.key].map((t) => (
-                          <div
-                            key={t.id}
-                            className={`p-2 rounded-md bg-white text-sm ${ui.chipBg} ${ui.chipText}`}
-                            style={{
-                              borderLeft: `4px solid ${ui.base}`,
-                              borderRight: `1px solid ${ui.border}`,
-                              borderTop: `1px solid ${ui.border}`,
-                              borderBottom: `1px solid ${ui.border}`,
-                            }}
-                          >
-                            {t.text}
-                          </div>
-                        ))}
+                        {columnTasks.map((task) => {
+                          const taskDate = new Date(task.scheduledDate);
+                          const today = new Date();
+                          const isToday = taskDate.toDateString() === today.toDateString();
+                          
+                          return (
+                            <div
+                              key={task.id}
+                              className={`p-3 rounded-md bg-white text-sm border ${ui.chipBg} ${ui.chipText} ${
+                                task.completed ? 'opacity-60' : ''
+                              }`}
+                              style={{
+                                borderLeft: `4px solid ${ui.base}`,
+                                borderRight: `1px solid ${ui.border}`,
+                                borderTop: `1px solid ${ui.border}`,
+                                borderBottom: `1px solid ${ui.border}`,
+                              }}
+                            >
+                              <div className="font-medium mb-1">{task.text}</div>
+                              <div className="text-xs text-gray-600 mb-2">
+                                {taskDate.toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })} • Day {task.cycleDay}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                  {Math.round(task.confidence * 100)}% match
+                                </span>
+                                {isToday && (
+                                  <span className="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                                    Today!
+                                  </span>
+                                )}
+                              </div>
+                              
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
