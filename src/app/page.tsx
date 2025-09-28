@@ -9,6 +9,7 @@ import {
   getCurrentCycleInfo,
 } from "../lib/utils";
 
+export const runtime = "edge";
 /* =========================
    Types
    ========================= */
@@ -129,7 +130,7 @@ const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTask
           <div className="xl:col-span-1 space-y-8">
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <div className="mb-3 flex items-center justify-between">
-                <div className="text font-semibold text-[#1F2937]">Cycle overview</div>
+                <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
                   <Legend swatch="#e11d48" label="Estrogen (E2)" />
                   <Legend swatch="#6366F1" label="Progesterone (P4)" />
@@ -145,17 +146,17 @@ const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTask
                 heightMobile={280}
               />
 
-               <div className="mt-4 flex justify-center">
+              <div className="mt-4 flex justify-center">
                 <LogPeriodButton defaultDate={lastStart} onSave={(iso) => setLastStart(iso)} />
               </div>
-            
+
               <div className="mt-6">
                 <h3 className="text-base font-semibold mb-2">What am I looking at?</h3>
                 <p className="text-sm text-[#1F2937]">
-                  This chart is an educational illustration of typical estrogen and progesterone
-                  patterns across a menstrual cycle. Many people feel more creative and social as estrogen rises (during the
-                  follicular/ovulatory phases), and more focused on finishing and details when progesterone is
-                  higher (luteal phase). Still, everybody's body is unique, so please use this as a guide, not a rulebook.
+                  This chart is an educational illustration of typical estrogen (E2) and progesterone (P4)
+                  patterns across a cycle. Many people feel more creative and social as estrogen rises
+                  (follicular/ovulatory), and more focused on finishing and details when progesterone is
+                  higher (luteal). Everyone's body is different—use this as a guide, not a rulebook.
                 </p>
               </div>
             </section>
@@ -164,9 +165,7 @@ const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTask
           {/* RIGHT (2/3) — Wide stack: Tasks → Kanban → Long-term */}
           <aside className="xl:col-span-2 space-y-8">
             {/* Display upcoming Cedar tasks */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
-  <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
-</div>
+            <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
 
             {/* Kanban — WIDE */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
@@ -284,10 +283,10 @@ const { cedarTasks, addCedarTask, toggleCedarTask, refreshTasks } = useCedarTask
           {/* Popup Content */}
           <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-xl font-semibold text-black">AI Smart Scheduler</h2>
+              <h2 className="text-xl font-semibold text-gray-900">AI Smart Scheduler</h2>
               <button
                 onClick={() => setShowSchedulerPopup(false)}
-                className="text-black hover:text-black text-2xl leading-none"
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
               >
                 ×
               </button>
@@ -317,7 +316,7 @@ function Legend({ swatch, label, line = false }: { swatch: string; label: string
       ) : (
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: swatch }} />
       )}
-      <span className="text-sm md:text-base font-medium">{label}</span>
+      <span>{label}</span>
     </span>
   );
 }
@@ -445,7 +444,7 @@ function HormoneGraph({
   const x = (day: number) =>
     PAD + ((Math.max(1, Math.min(cycleLength, day)) - 1) / Math.max(1, cycleLength - 1)) * (W - PAD * 2);
   const y = (val: number) => {
-    const top = 64, bottom = H - 32;
+    const top = 16, bottom = H - 32;
     return bottom - Math.max(0, Math.min(1, val)) * (bottom - top);
   };
 
@@ -498,8 +497,7 @@ function HormoneGraph({
     { start: 1, end: menstrualEnd, fill: "rgba(244,63,94,0.06)", label: "Menstrual" },
     { start: follicularStart, end: follicularEnd, fill: "rgba(20,184,166,0.06)", label: "Follicular" },
     { start: ovulatoryStart, end: ovulatoryEnd, fill: "rgba(249,115,22,0.10)", label: "Ovulatory" },
-    { start: lutealStart, end: lutealStart + 6, fill: "rgba(167,139,250,0.06)", label: "Early Luteal" },
-    { start: lutealStart + 6, end: lutealEnd, fill: "rgba(255, 151, 205, 0.2)", label: "Late Luteal" },
+    { start: lutealStart, end: lutealEnd, fill: "rgba(167,139,250,0.06)", label: "Luteal" },
   ].filter((b) => b.end >= b.start);
 
   function onMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
@@ -539,7 +537,7 @@ function HormoneGraph({
           return (
             <g key={i}>
               <rect x={x1} y={16} width={Math.max(0, x2 - x1)} height={H - 44} fill={b.fill} rx={3} />
-              <text x={x1 + 6} y={28} fontSize="12" fontWeight="bold" fill="#6B7280">
+              <text x={x1 + 6} y={28} fontSize="10" fill="#6B7280">
                 {b.label}
               </text>
             </g>
@@ -557,17 +555,16 @@ function HormoneGraph({
         {/* today marker */}
         <line
           x1={x(cycleDay)} y1={16} x2={x(cycleDay)} y2={H - 28}
-          stroke="#000000" strokeDasharray="6,6" strokeWidth={2}
+          stroke="#A020F0" strokeDasharray="6,6" strokeWidth={2}
         />
-          stroke="#000000" strokeDasharray="6,6" strokeWidth={2}
-        <circle cx={x(cycleDay)} cy={y(estrogen(cycleDay))} r="5.5" fill="#000000" />
+        <circle cx={x(cycleDay)} cy={y(estrogen(cycleDay))} r="5.5" fill="#A020F0" />
 
         {/* x labels */}
-        <text x={x(1)} y={H - 8} fontSize="19" textAnchor="middle" fill="#6B7280">1</text>
-        <text x={x(Math.ceil(cycleLength / 2))} y={H - 8} fontSize="19" textAnchor="middle" fill="#6B7280">
+        <text x={x(1)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">1</text>
+        <text x={x(Math.ceil(cycleLength / 2))} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
           {Math.ceil(cycleLength / 2)}
         </text>
-        <text x={x(cycleLength)} y={H - 8} fontSize="19" textAnchor="middle" fill="#6B7280">
+        <text x={x(cycleLength)} y={H - 8} fontSize="10" textAnchor="middle" fill="#6B7280">
           {cycleLength}
         </text>
       </svg>
