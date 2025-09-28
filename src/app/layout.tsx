@@ -27,19 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="glossy-header sticky top-0 z-30 w-full border-b border-[#EDEFF3]">
           <div className="max-w-[1400px] mx-3 px-3 sm:px-4 md:px-6 py-4 md:py-5 flex items-center justify-between">
             <div className="flex flex-col">
-              <div
-                className="metallic-text inline-block leading-none
-                className="metallic-text inline-block leading-tight
-                           text-3xl md:text-4xl lg:text-[44px] font-extrabold tracking-tight
-                           transition-transform duration-200 ease-out origin-left
-                           motion-safe:hover:scale-[1.04]"
-              >
+              <div className="metallic-text inline-block leading-tight text-3xl md:text-4xl lg:text-[44px] font-extrabold tracking-tight transition-transform duration-200 ease-out origin-left motion-safe:hover:scale-[1.04]">
                 getitdone
               </div>
-              <div className="mt-1 text-s sm:text-sm md:text-base font-large tracking-wide text-[#000000]/75">
-              {/* Site Header */}
-              <div className="md:mt=1 md:ml-10 text-base md:text-xl lg:text-2xl font-medium text-[#111827] leading-tight">
-              your cycle, your strategy
+              <div className="md:mt-1 md:ml-10 text-base md:text-xl lg:text-2xl font-medium text-[#111827] leading-tight">
+                your cycle, your strategy
               </div>
             </div>
           </div>
