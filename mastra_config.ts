@@ -75,7 +75,6 @@ RESPONSE METHODOLOGY:
   "hormonalInsight": "Brief explanation of the hormonal context affecting this recommendation"
 }
 
-The user's input data and analysis instructions will follow this prompt. Generate your recommendation now based on the input you receive.
 `,
 });
 

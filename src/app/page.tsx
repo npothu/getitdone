@@ -23,9 +23,9 @@ type ColKey = "Menstrual" | "Follicular" | "Ovulatory" | "Early Luteal" | "Late 
 const PHASE_UI: Record<ColKey, { base: string; light: string; chipBg: string; chipText: string; border: string }> = {
   // deep color
   Menstrual:   { base: "#be123c", light: "rgba(190,18,60,0.08)", chipBg: "bg-rose-50",    chipText: "text-rose-800",    border: "#fecdd3" },
-  // “free & fun”
+  // "free & fun"
   Follicular:  { base: "#0ea5a4", light: "rgba(14,165,164,0.08)", chipBg: "bg-teal-50",    chipText: "text-teal-800",    border: "#99f6e4" },
-  // “punch in the face”
+  // "punch in the face"
   Ovulatory:   { base: "#f97316", light: "rgba(249,115,22,0.10)", chipBg: "bg-orange-50",  chipText: "text-orange-800",  border: "#fed7aa" },
   // soft
   "Early Luteal": { base: "#a78bfa", light: "rgba(167,139,250,0.10)", chipBg: "bg-violet-50", chipText: "text-violet-800", border: "#ddd6fe" },
@@ -41,6 +41,9 @@ export default function Dashboard() {
 
   // Refresh trigger for Cedar tasks
   const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0)
+  
+  // Popup state for Cedar scheduler
+  const [showSchedulerPopup, setShowSchedulerPopup] = useState(false)
 
   // Minimal cycle state (defaults)
   const [lastStart, setLastStart] = useState<string>(
@@ -104,27 +107,14 @@ export default function Dashboard() {
     return acc;
   }, { ...initCols });
 
-  // Add Task (Kanban header)
-  const [newKanbanTask, setNewKanbanTask] = useState("");
-  const addTaskFromKanban = () => {
-    const text = newKanbanTask.trim();
-    if (!text) return;
-    const optimalPhase = getTaskOptimalPhase(text);
-    const okNow = isOptimalTiming(text, currentCycle.phase);
-    setTasks((prev) => [...prev, { id: Date.now(), text, completed: false }]);
-    setNewKanbanTask("");
-    if (!okNow) {
-      const phaseInfo = getOptimalPhaseInfo(optimalPhase);
-      console.log(`Tip: "${text}" would be optimal during ${phaseInfo.name} phase`);
-    }
-  };
-
   // Cedar task handlers
   const handleTaskScheduled = (task: any) => {
     console.log('Task scheduled:', task)
     addCedarTask(task)
     // Trigger refresh of all Cedar task components
     setTaskRefreshTrigger(prev => prev + 1)
+    // Close the popup after successful scheduling
+    setShowSchedulerPopup(false)
   }
 
   const handleTasksRefresh = () => {
@@ -138,7 +128,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* LEFT (1/3) — Hormone chart */}
           <div className="xl:col-span-1 space-y-8">
-          <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
+            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-sm font-semibold text-[#1F2937]">Cycle overview</div>
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
@@ -166,7 +156,7 @@ export default function Dashboard() {
                   This chart is an educational illustration of typical estrogen (E2) and progesterone (P4)
                   patterns across a cycle. Many people feel more creative and social as estrogen rises
                   (follicular/ovulatory), and more focused on finishing and details when progesterone is
-                  higher (luteal). Everyone’s body is different—use this as a guide, not a rulebook.
+                  higher (luteal). Everyone's body is different—use this as a guide, not a rulebook.
                 </p>
               </div>
             </section>
@@ -174,75 +164,23 @@ export default function Dashboard() {
 
           {/* RIGHT (2/3) — Wide stack: Tasks → Kanban → Long-term */}
           <aside className="xl:col-span-2 space-y-8">
-            {/* Today’s Tasks — WIDE */}
-            <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
-              <h2 className="text-2xl font-bold mb-4">Today’s Tasks</h2>
-              <div className="space-y-3">
-                {tasks.map((task) => {
-                  const optimalPhase = getTaskOptimalPhase(task.text);
-                  const phaseInfo = getOptimalPhaseInfo(optimalPhase);
-                  const okNow = isOptimalTiming(task.text, currentCycle.phase);
-                  return (
-                    <div
-                      key={task.id}
-                      className={`p-3 rounded-lg border-2 ${
-                        okNow ? "bg-green-50 border-green-200" : "bg-[#FFF7F9] border-[#F1F5F9]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => toggleTask(task.id)}
-                          className="w-5 h-5 text-rose-500 rounded border-gray-300 focus:ring-rose-400"
-                        />
-                        <span className={`flex-1 ${task.completed ? "line-through" : ""}`}>{task.text}</span>
-                        <div className="flex items-center gap-2">
-                          {okNow ? (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                              ✨ Optimal Now
-                            </span>
-                          ) : (
-                            <span
-                              className="px-2 py-1 text-xs rounded-full font-medium"
-                              style={{
-                                backgroundColor: getOptimalPhaseInfo(optimalPhase).color + "20",
-                                color: getOptimalPhaseInfo(optimalPhase).color,
-                              }}
-                            >
-                              {phaseInfo.emoji} Best in {phaseInfo.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+            {/* Display upcoming Cedar tasks */}
+            <UpcomingCedarTasks refreshTrigger={taskRefreshTrigger} />
 
             {/* Kanban — WIDE */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9] u-grow-md u-lift">
               <div className="flex items-end justify-between gap-3 mb-4">
                 <div>
                   <h2 className="text-2xl font-bold">Plan by Cycle Phase</h2>
-                  <p className="text-xs text-black/70">Add a task here and we’ll slot it by phase.</p>
+                  <p className="text-xs text-black/70">Use AI to schedule tasks optimally by your cycle phase.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newKanbanTask}
-                    onChange={(e) => setNewKanbanTask(e.target.value)}
-                    placeholder="Add task…"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent placeholder:text-black/60"
-                    onKeyDown={(e) => e.key === "Enter" && addTaskFromKanban()}
-                  />
                   <button
-                    onClick={addTaskFromKanban}
-                    className="px-3 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                    onClick={() => setShowSchedulerPopup(true)}
+                    className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
                     data-text-white
                   >
-                    + Add
+                    ✨ Smart Schedule
                   </button>
                 </div>
               </div>
@@ -297,6 +235,36 @@ export default function Dashboard() {
           </aside>
         </div>
       </div>
+
+      {/* Cedar Task Scheduler Popup */}
+      {showSchedulerPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSchedulerPopup(false)}
+          />
+          {/* Popup Content */}
+          <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-xl font-semibold text-gray-900">AI Smart Scheduler</h2>
+              <button
+                onClick={() => setShowSchedulerPopup(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <CedarTaskScheduler
+                currentCycle={currentCycle}
+                onTaskScheduled={handleTaskScheduled}
+                onTasksRefresh={handleTasksRefresh}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -363,7 +331,7 @@ function LogPeriodButton({
           <div className="relative z-50 w-full max-w-sm bg-white rounded-xl border border-[#F1F5F9] shadow-lg p-4">
             <div className="text-base font-semibold mb-2">Log period start (Day 1)</div>
             <p className="text-sm text-black/80 mb-3">
-              Pick the first day of your most recent period. We’ll recalc your cycle.
+              Pick the first day of your most recent period. We'll recalc your cycle.
             </p>
             <input
               type="date"

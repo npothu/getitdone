@@ -48,7 +48,17 @@ export default function UpcomingCedarTasks({ refreshTrigger }: UpcomingCedarTask
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setTasks(data.tasks)
+          // Filter tasks to show only next 3 days
+          const today = new Date()
+          const threeDaysFromNow = new Date(today)
+          threeDaysFromNow.setDate(today.getDate() + 3)
+          
+          const filteredTasks = data.tasks.filter((task: CedarTask) => {
+            const taskDate = new Date(task.scheduled_date)
+            return taskDate >= today && taskDate <= threeDaysFromNow
+          })
+          
+          setTasks(filteredTasks)
         }
       }
     } catch (error) {
@@ -94,11 +104,23 @@ export default function UpcomingCedarTasks({ refreshTrigger }: UpcomingCedarTask
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    const today = new Date()
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    }
+    
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       month: 'short', 
       day: 'numeric' 
     })
+  }
+
+  const isTaskToday = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
   }
 
   const getPhaseColor = (phase: string) => {
@@ -192,57 +214,68 @@ export default function UpcomingCedarTasks({ refreshTrigger }: UpcomingCedarTask
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Upcoming Cedar-Scheduled Tasks
+        Upcoming Cedar-scheduled Tasks
       </h3>
 
       {tasks.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <div className="text-4xl mb-2">📅</div>
-          <div>No upcoming Cedar-scheduled tasks</div>
+          <div>No Cedar tasks in the next 3 days</div>
           <div className="text-sm text-gray-400 mt-1">
-            Use the AI scheduler above to create cycle-optimized tasks
+            Use the AI scheduler to create cycle-optimized tasks
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Task List */}
           <div className="space-y-3">
-            {tasks.map((task) => (
-              <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:border-rose-300 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-gray-900">{task.title}</h4>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        {Math.round(task.confidence * 100)}% match
-                      </span>
+            {tasks.map((task) => {
+              const isTodayTask = isTaskToday(task.scheduled_date)
+              
+              return (
+                <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:border-rose-300 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-medium text-gray-900">{task.title}</h4>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          {Math.round(task.confidence * 100)}% match
+                        </span>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-gray-400 hover:text-gray-600 text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600 mb-2">
+                        {formatDate(task.scheduled_date)} • Cycle Day {task.cycle_day} • <span style={{ color: getPhaseColor(task.phase) }} className="font-medium">{task.phase} phase</span>
+                      </div>
+
+                      <div className="text-sm text-gray-600">
+                        <strong>Cedar reasoning:</strong><br />
+                        {task.short_summary || task.reasoning[0] || 'AI-optimized timing for your cycle phase'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-4">
+                      {isTodayTask && (
+                        <span className="text-sm text-orange-600 font-medium">
+                          Today's priority
+                        </span>
+                      )}
                       <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-gray-400 hover:text-gray-600 text-sm"
+                        onClick={() => handleToggleComplete(task.id, true)}
+                        className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                       >
-                        ✕
+                        Complete
                       </button>
                     </div>
-                    
-                    <div className="text-sm text-gray-600 mb-2">
-                      {formatDate(task.scheduled_date)} • Cycle Day {task.cycle_day} • <span style={{ color: getPhaseColor(task.phase) }} className="font-medium">{task.phase} phase</span>
-                    </div>
-
-                    <div className="text-sm text-gray-600">
-                      <strong>Cedar reasoning:</strong><br />
-                      {task.short_summary || task.reasoning[0] || 'AI-optimized timing for your cycle phase'}
-                    </div>
                   </div>
-
-                  <button
-                    onClick={() => handleToggleComplete(task.id, true)}
-                    className="ml-4 px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
-                  >
-                    Complete
-                  </button>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Summary */}
