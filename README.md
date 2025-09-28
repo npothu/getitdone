@@ -24,14 +24,13 @@
 - Created a **cycle wheel visualization** and **Today’s Focus** panel with React components
 - Integrated **Gemini API** to parse task descriptions and recommend the optimal phase
 - Used **Mastra** to power agent-based logic (phase-aware nudges like _✨ Great fit today_)
-- Deployed the demo via **Cloudflare** with a custom **GoDaddy domain**
 
 ---
 
 ## 🚀 Hackathon Outcome
 
 - A polished **phase-aware dashboard** built in a weekend
-- Integrated **Mastra + Gemini API + CedarOS** into one workflow
+- Integrated **Mastra + Gemini API** into one workflow
 - Shipped live on a custom domain so anyone can try it instantly
 
 ---
