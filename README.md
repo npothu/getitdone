@@ -14,8 +14,6 @@
 - **Gemini API** — interprets natural-language tasks and maps them to cycle phases  
   _Example: “brainstorm ideas” → Follicular_
 - **CedarOS** — policy-driven guardrails around user input & AI suggestions
-- **Cloudflare** — global hosting & deployment
-- **GoDaddy** — domain registration (`getitdone.app`)
 - **Supabase / PostgreSQL (planned)** — persistence & multi-user login
 
 ---
