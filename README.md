@@ -13,7 +13,6 @@
 - **Mastra Agent Framework** — orchestrates agent logic for contextual task nudges
 - **Gemini API** — interprets natural-language tasks and maps them to cycle phases  
   _Example: “brainstorm ideas” → Follicular_
-- **CedarOS** — policy-driven guardrails around user input & AI suggestions
 - **Supabase / PostgreSQL (planned)** — persistence & multi-user login
 
 ---
