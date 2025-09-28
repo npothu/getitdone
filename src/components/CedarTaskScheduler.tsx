@@ -516,8 +516,8 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
     return (
       <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
         <div className="text-center py-4">
-          <div className="text-gray-500">Gemini API Key Required</div>
-          <div className="text-sm text-gray-400 mt-1">Add NEXT_PUBLIC_GEMINI_API_KEY to use Gemini AI</div>
+          <div className="text-black">Gemini API Key Required</div>
+          <div className="text-sm text-black mt-1">Add NEXT_PUBLIC_GEMINI_API_KEY to use Gemini AI</div>
         </div>
       </div>
     )
@@ -527,8 +527,8 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
     <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F1F5F9]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Gemini AI Task Scheduler</h3>
-          <p className="text-sm text-gray-600">AI-powered cycle-aware scheduling with Google Gemini</p>
+          <h3 className="text-lg font-semibold text-black">Gemini AI Task Scheduler</h3>
+          <p className="text-sm text-black">AI-powered cycle-aware scheduling with Google Gemini</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -541,51 +541,51 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
       {showForm && (
         <div className="space-y-4 border-t pt-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Task Description</label>
+            <label className="block text-sm font-medium text-black mb-1">Task Description</label>
             <textarea
               value={constraints.description}
               onChange={(e) => setConstraints(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe what you need to do... (e.g., 'Review quarterly metrics and prepare presentation for board meeting')"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent text-black"
             />
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               AI will automatically detect task type and optimize scheduling based on your description
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date (Optional)</label>
+              <label className="block text-sm font-medium text-black mb-1">Due Date (Optional)</label>
               <input
                 type="date"
                 onChange={(e) => setConstraints(prev => ({ 
                   ...prev, 
                   dueDate: e.target.value ? new Date(e.target.value) : undefined 
                 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent text-black"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Flexibility (days)</label>
+              <label className="block text-sm font-medium text-black mb-1">Flexibility (days)</label>
               <input
                 type="number"
                 min="1"
                 max="14"
                 value={constraints.flexibilityDays}
                 onChange={(e) => setConstraints(prev => ({ ...prev, flexibilityDays: parseInt(e.target.value) || 7 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent text-black"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Energy Required</label>
+              <label className="block text-sm font-medium text-black mb-1">Energy Required</label>
               <select
                 value={constraints.energyRequired}
                 onChange={(e) => setConstraints(prev => ({ ...prev, energyRequired: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent text-black"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -593,11 +593,11 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Focus Required</label>
+              <label className="block text-sm font-medium text-black mb-1">Focus Required</label>
               <select
                 value={constraints.focusRequired}
                 onChange={(e) => setConstraints(prev => ({ ...prev, focusRequired: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400 focus:border-transparent text-black"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -607,7 +607,7 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Available Days (leave empty for any day)</label>
+            <label className="block text-sm font-medium text-black mb-2">Available Days (leave empty for any day)</label>
             <div className="flex flex-wrap gap-2">
               {daysOfWeek.map(day => (
                 <button
@@ -620,7 +620,7 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
                         : [...prev.availableDays, day]
                     }))
                   }}
-                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                  className={`px-3 py-1 text-sm rounded-full border transition-colors text-black ${
                     constraints.availableDays.includes(day)
                       ? 'border-rose-400 bg-rose-50 text-rose-800'
                       : 'border-gray-200 hover:border-gray-300'
@@ -645,7 +645,7 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
       {suggestion && (
         <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 rounded-lg">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold text-gray-900">Gemini AI Recommendation</h4>
+            <h4 className="font-semibold text-black">Gemini AI Recommendation</h4>
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
               {Math.round(suggestion.confidence * 100)}% confidence
             </span>
@@ -654,8 +654,8 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-white border border-rose-200 rounded-lg">
               <div>
-                <div className="font-medium text-gray-900">{formatDate(suggestion.suggestedDate)}</div>
-                <div className="text-sm text-gray-600">
+                <div className="font-medium text-black">{formatDate(suggestion.suggestedDate)}</div>
+                <div className="text-sm text-black">
                   Cycle Day {suggestion.cycleDay} - 
                   <span style={{ color: getPhaseColor(suggestion.phase) }} className="font-medium ml-1">
                     {suggestion.phase} phase
@@ -665,14 +665,14 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
               <div className="flex flex-col gap-2">
                 <button
                   onClick={handleAcceptSuggestion}
-                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors text-sm"
+                  className="px-4 py-2 bg-rose-500 text-black rounded-lg hover:bg-rose-600 transition-colors text-sm"
                 >
                   Accept & Schedule
                 </button>
                 {suggestion.alternatives && suggestion.alternatives.length > 0 && (
                   <button
                     onClick={handleAcceptAlternative}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    className="px-4 py-2 bg-blue-500 text-black rounded-lg hover:bg-blue-600 transition-colors text-sm"
                   >
                     Use Next Alternative
                   </button>
@@ -680,7 +680,7 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
               </div>
             </div>
 
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-black">
               <div className="font-medium mb-1">AI Analysis:</div>
               <ul className="list-disc list-inside space-y-1">
                 {suggestion.reasoning.map((reason, index) => (
@@ -691,11 +691,11 @@ export default function CedarTaskScheduler({ currentCycle, onTaskScheduled, onTa
 
             {suggestion.alternatives.length > 0 && (
               <div>
-                <div className="font-medium text-gray-700 text-sm mb-2">Alternative Options:</div>
+                <div className="font-medium text-black text-sm mb-2">Alternative Options:</div>
                 <div className="space-y-1">
                   {suggestion.alternatives.map((alt, index) => (
-                    <div key={index} className={`text-xs flex justify-between p-2 rounded ${
-                      index === 0 ? 'bg-blue-50 border border-blue-200' : 'text-gray-600'
+                    <div key={index} className={`text-xs text-black flex justify-between p-2 rounded ${
+                      index === 0 ? 'bg-blue-50 border border-blue-200' : 'text-black'
                     }`}>
                       <span>{formatDate(alt.date)} (Day {alt.cycleDay}, {alt.phase})</span>
                       <span>{Math.round(alt.confidence * 100)}% fit</span>
